@@ -101,6 +101,8 @@ function applyLang() {
     ? "⚠️ 死別・干ばつなどのライフイベントを含める<br><small>ファシリテーター向け設定。参加者の状況にあわせてONにしてください。</small>"
     : "⚠️ Include loss & disaster life events<br><small>For facilitators. Turn on when it suits your group.</small>";
   $("startBtn").textContent = ja() ? "ゲーム開始" : "Start game";
+  $("cardBtnLabel").textContent = ja() ? "カード" : "Card";
+  $("cardBtn").setAttribute("aria-label", ja() ? "自分の家庭カードを見る" : "See my family card");
   $("logoTxt").textContent = ja() ? "🌍 トビラ" : "🌍 TOBIRA";
   $("resTitle").textContent = ja() ? "🎉 けっか はっぴょう" : "🎉 Results";
   $("resSub").textContent = ja()
