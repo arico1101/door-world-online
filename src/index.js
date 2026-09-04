@@ -73,9 +73,10 @@ export class Room {
     if (found) { found.connected = true; if (name) found.name = name; return; }
     if (this.g.phase !== "lobby") return;              /* 開始後は新規参加できない（再接続は上で拾う） */
     if (this.g.players.length >= 6) return;
+    const used = new Set(this.g.players.map(p => p.color));
     this.g.players.push({
       id: pid, name: name || `Player ${this.g.players.length + 1}`,
-      color: R.PCOLORS[this.g.players.length % R.PCOLORS.length], connected: true,
+      color: R.PCOLORS.find(c => !used.has(c)) || R.PCOLORS[this.g.players.length % R.PCOLORS.length], connected: true,
       pos: 0, money: 0, learn: 0, happy: 0, done: false, rankAt: null, seen: false,
     });
     if (!this.g.players.some(p => p.id === this.g.hostId)) this.g.hostId = this.g.players[0].id;
@@ -86,7 +87,7 @@ export class Room {
     const o = {
       id: p.id, name: p.name, color: p.color, connected: p.connected,
       pos: p.pos, money: p.money, learn: p.learn, happy: p.happy,
-      done: p.done, rankAt: p.rankAt, seen: p.seen,
+      done: p.done, rankAt: p.rankAt, seen: p.seen, left: !!p.left,
     };
     if (reveal) {                                       /* 結果発表で全公開 */
       o.fam = p.fam; o.perk = p.perk; o.mult = p.mult; o.aai = p.aai;
@@ -131,7 +132,7 @@ export class Room {
     else if (m.t === "seen" && g.phase === "cards") {
       const p = g.players.find(x => x.id === pid);
       if (p) p.seen = true;
-      if (g.players.every(x => x.seen)) { g.phase = "play"; g.turn = 0; this.beginTurn(); }
+      if (g.players.every(x => x.seen)) this.startPlay();
     }
     else if (m.t === "roll" && g.phase === "play" && !g.pending && this.isActor(pid)) {
       this.roll();
@@ -143,9 +144,71 @@ export class Room {
       this.confirmPending();
     }
     else if (m.t === "again" && pid === g.hostId && g.phase === "result") {
-      g.phase = "lobby"; g.turn = 0; g.dice = null; g.pending = null; g.deck = [];
-      g.players.forEach(p => { p.seen = false; p.done = false; p.rankAt = null; delete p.fam; });
+      this.toLobby();
     }
+    /* ---- ここから進行役むけの操作（当日、進行が止まったときの逃げ道） ---- */
+    else if (m.t === "kick" && pid === g.hostId && m.id && m.id !== g.hostId) {
+      this.removePlayer(String(m.id));
+    }
+    else if (m.t === "skipTurn" && pid === g.hostId && g.phase === "play") {
+      this.endTurn();                                  /* 手番の人が動けないとき、その番をとばす */
+    }
+    else if (m.t === "forceCards" && pid === g.hostId && g.phase === "cards") {
+      this.startPlay();                                /* カード確認が終わらない人を待たずに始める */
+    }
+    else if (m.t === "passHost" && pid === g.hostId && m.id !== g.hostId) {
+      const t = g.players.find(p => p.id === m.id);
+      if (t && !t.left) g.hostId = t.id;
+    }
+    else if (m.t === "claimHost") {
+      /* 進行役の端末が落ちて戻ってこないとき、残った人が引きつげる */
+      const host = g.players.find(p => p.id === g.hostId);
+      const me = g.players.find(p => p.id === pid);
+      if (me && !me.left && (!host || !host.connected)) g.hostId = pid;
+    }
+    else if (m.t === "reset" && pid === g.hostId) {
+      this.toLobby();                                  /* 途中でも、いつでもロビーにもどせる */
+    }
+  }
+
+  /* ---------- 進行役むけの操作 ---------- */
+  /* カード確認フェーズ → プレイ開始。抜けた人の番から始まらないようにする */
+  startPlay() {
+    const g = this.g;
+    const first = g.players.findIndex(p => !p.done);
+    if (first < 0) { g.phase = "result"; g.pending = null; g.dice = null; return; }
+    g.phase = "play"; g.turn = first;
+    this.beginTurn();
+  }
+  /* ロビーでは名簿から消し、始まったあとは「退出」として進行から外す */
+  removePlayer(id) {
+    const g = this.g;
+    const i = g.players.findIndex(p => p.id === id);
+    if (i < 0) return;
+    if (g.phase === "lobby") {
+      g.players.splice(i, 1);
+      if (g.players.length && !g.players.some(p => p.id === g.hostId)) g.hostId = g.players[0].id;
+      if (g.turn >= g.players.length) g.turn = 0;
+      return;
+    }
+    const p = g.players[i];
+    p.left = true; p.done = true; p.seen = true;
+    if (g.phase === "cards") { if (g.players.every(x => x.seen)) this.startPlay(); return; }
+    if (g.phase !== "play") return;
+    if (g.players.every(x => x.done)) { g.phase = "result"; g.pending = null; g.dice = null; return; }
+    if (g.turn === i) this.endTurn();                  /* 手番の人が抜けたら次の人へ */
+  }
+  /* 結果画面から、あるいは途中からロビーへ。退出した人は名簿から消す */
+  toLobby() {
+    const g = this.g;
+    const rest = g.players.filter(p => !p.left);
+    if (rest.length) g.players = rest;
+    if (g.players.length && !g.players.some(p => p.id === g.hostId)) g.hostId = g.players[0].id;
+    g.phase = "lobby"; g.turn = 0; g.dice = null; g.pending = null; g.deck = [];
+    g.players.forEach(p => {
+      p.seen = false; p.done = false; p.rankAt = null;
+      delete p.fam; delete p.left;
+    });
   }
 
   /* ---------- 家庭カードを配る ---------- */

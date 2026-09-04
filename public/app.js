@@ -72,6 +72,8 @@ $("againBtn").onclick = () => send({ t: "again" });
 $("diceBtn").onclick = () => send({ t: "roll" });
 $("cardBtn").onclick = () => { if (!isOpen() && YOU) showCard(true); };
 $("helpBtnGame").onclick = () => { if (!isOpen()) renderRules(0); };
+$("hostBtn").onclick = () => { if (hostOpen()) closeHost(); else renderHostPanel(); };
+$("claimBtn").onclick = () => send({ t: "claimHost" });
 
 /* ---------- 言語 ---------- */
 function applyLang() {
@@ -206,14 +208,100 @@ function renderStrip() {
   s.innerHTML = "";
   G.players.forEach((p, i) => {
     const c = document.createElement("div");
-    c.className = "pcard" + (i === G.turn ? " now" : "") + (p.done ? " done" : "") + (p.connected ? "" : " off");
+    c.className = "pcard" + (i === G.turn ? " now" : "") + (p.done ? " done" : "")
+      + (p.connected ? "" : " off") + (p.left ? " left" : "");
     c.innerHTML = `
-      <div class="nm"><span class="p-dot" style="background:${p.color}"></span>${p.name}${p.id === MYPID ? `<span class="mine-badge">${ja() ? "あなた" : "you"}</span>` : ""}${p.done ? " 🏁" : ""}<span class="age">${fage(R.AGES[p.pos])}</span></div>
+      <div class="nm"><span class="p-dot" style="background:${p.color}"></span>${p.name}${p.id === MYPID ? `<span class="mine-badge">${ja() ? "あなた" : "you"}</span>` : ""}${p.left ? " 🚪" : (p.done ? " 🏁" : "")}<span class="age">${fage(R.AGES[p.pos])}</span></div>
       <div class="stat"><span>${ja() ? "おかね" : "Money"}</span><b class="${p.money < 0 ? "neg" : ""}">${fm(p.money)}</b></div>
       <div class="stat"><span>${ja() ? "まなび" : "Learn"}</span><b>${"★".repeat(Math.min(p.learn, 8))}${p.learn > 8 ? "+" : ""}</b></div>
       <div class="stat"><span>${ja() ? "ハッピー" : "Happy"}</span><b>♥${p.happy}</b></div>`;
     s.appendChild(c);
   });
+}
+
+/* ---------- 進行役パネル ----------
+   ゲームのモーダルとは別のオーバーレイを使う（できごとの表示と取り合わない） */
+function openHost(html) {
+  $("hostBox").innerHTML = html;
+  $("hostOverlay").classList.add("open");
+  document.body.classList.add("host-open");
+}
+function closeHost() {
+  $("hostOverlay").classList.remove("open");
+  $("hostBox").innerHTML = "";
+  document.body.classList.remove("host-open");
+}
+const hostOpen = () => $("hostOverlay").classList.contains("open");
+const iAmHost = () => !!G && MYPID === G.hostId;
+const ask = t => window.confirm(L(t));
+
+function renderHostPanel() {
+  if (!G || !iAmHost()) { closeHost(); return; }
+  const cur = G.phase === "play" ? G.players[G.turn] : null;
+  const rows = G.players.map(p => {
+    const tags = [];
+    if (p.id === G.hostId) tags.push(ja() ? "👑 進行役" : "👑 host");
+    if (cur && p.id === cur.id) tags.push(ja() ? "🎲 いまの手番" : "🎲 current turn");
+    if (p.left) tags.push(ja() ? "🚪 退出" : "🚪 left");
+    else if (p.done) tags.push("🏁");
+    return `<div class="host-row${p.connected ? "" : " off"}">
+      <span class="hn"><span class="p-dot" style="background:${p.color}"></span>${p.name}
+        <span class="st">${p.connected ? "🟢" : (ja() ? "⚪️ 切断中" : "⚪️ offline")}</span></span>
+      ${tags.map(t => `<span class="tag">${t}</span>`).join("")}
+      ${p.id === MYPID || p.left ? "" : `<button class="host-act" data-pass="${p.id}">${ja() ? "👑 ゆずる" : "👑 make host"}</button>
+      <button class="host-act danger" data-kick="${p.id}">${ja() ? "外す" : "Remove"}</button>`}
+    </div>`;
+  }).join("");
+
+  const btns = [];
+  if (G.phase === "cards") btns.push(`<button class="host-act" id="hForce">${ja()
+    ? "▶ まだの人を待たずに始める" : "▶ Start without the ones still looking"}</button>`);
+  if (G.phase === "play" && cur) btns.push(`<button class="host-act" id="hSkip">${ja()
+    ? `⏭ ${cur.name} さんの番をとばす` : `⏭ Skip ${cur.name}'s turn`}</button>`);
+  btns.push(`<button class="host-act danger" id="hReset">${ja()
+    ? "↩ ロビーにもどす" : "↩ Back to the lobby"}</button>`);
+
+  openHost(`<div class="rule-page">
+    <button class="rule-close" id="hClose">✕</button>
+    <span class="m-tag" style="background:var(--brown)">🛠 ${ja() ? "進行役メニュー" : "Host tools"}</span>
+    <h2>${ja() ? "進行がとまったとき" : "When the game gets stuck"}</h2>
+    <div class="host-note">${ja()
+      ? "端末が落ちた・席を外した・まちがえて入った——そんなときだけ使ってください。<br>ゲームの中身は変わりません。"
+      : "Only for when a device dies, someone steps out, or joins by mistake.<br>None of this changes the game itself."}</div>
+    <div class="host-list">${rows}</div>
+    <div class="host-btns">${btns.join("")}</div>
+  </div>`);
+
+  $("hClose").onclick = closeHost;
+  $("hostBox").querySelectorAll("[data-kick]").forEach(b => b.onclick = () => {
+    const p = G.players.find(x => x.id === b.dataset.kick) || { name: "" };
+    if (!ask(G.phase === "lobby"
+      ? { ja: `${p.name} さんを名簿から外します。よろしいですか？`, en: `Remove ${p.name} from the room. Are you sure?` }
+      : { ja: `${p.name} さんを、ここから先の進行から外します（けっか発表にも出ません）。よろしいですか？`,
+          en: `${p.name} will be dropped from the rest of the game (and from the results). Are you sure?` })) return;
+    send({ t: "kick", id: b.dataset.kick });
+  });
+  $("hostBox").querySelectorAll("[data-pass]").forEach(b => b.onclick = () => {
+    const p = G.players.find(x => x.id === b.dataset.pass) || { name: "" };
+    if (!ask({ ja: `進行役を ${p.name} さんにゆずります。よろしいですか？`, en: `Hand the host role to ${p.name}. Are you sure?` })) return;
+    send({ t: "passHost", id: b.dataset.pass });
+  });
+  if ($("hForce")) $("hForce").onclick = () => {
+    const left = G.players.filter(p => !p.seen).map(p => p.name).join(ja() ? "、" : ", ");
+    if (!ask({ ja: `まだカードを見ていない人（${left}）を待たずに始めます。よろしいですか？`,
+               en: `Start without those who haven't opened their card (${left}). Are you sure?` })) return;
+    send({ t: "forceCards" }); closeHost();
+  };
+  if ($("hSkip")) $("hSkip").onclick = () => {
+    if (!ask({ ja: `${cur.name} さんの番をとばして、次の人にすすみます。よろしいですか？`,
+               en: `Skip ${cur.name}'s turn and move on. Are you sure?` })) return;
+    send({ t: "skipTurn" }); closeHost();
+  };
+  $("hReset").onclick = () => {
+    if (!ask({ ja: "いまのゲームをやめて、ロビーにもどります。とちゅうの結果は消えます。よろしいですか？",
+               en: "End this game and return to the lobby. Progress will be lost. Are you sure?" })) return;
+    send({ t: "reset" }); closeHost();
+  };
 }
 
 /* ---------- モーダル部品 ---------- */
@@ -369,29 +457,49 @@ function render() {
     $("waitList").innerHTML = G.players.map(p =>
       `<div class="p-row wait-row"><span class="p-dot" style="background:${p.color}"></span>
        <span style="flex:1; font-weight:700">${p.name}${p.id === MYPID ? `<span class="mine-badge">${ja() ? "あなた" : "you"}</span>` : ""}${p.id === G.hostId ? " 👑" : ""}</span>
-       <span class="st">${p.connected ? "🟢" : "⚪️"}</span></div>`).join("");
-    closeModal();
+       <span class="st">${p.connected ? "🟢" : "⚪️"}</span>
+       ${host && p.id !== MYPID ? `<button class="rm" data-kick="${p.id}" aria-label="remove">✕</button>` : ""}</div>`).join("");
+    $("waitList").querySelectorAll("[data-kick]").forEach(b => b.onclick = () => {
+      const p = G.players.find(x => x.id === b.dataset.kick) || { name: "" };
+      if (!ask({ ja: `${p.name} さんを名簿から外します。よろしいですか？`, en: `Remove ${p.name} from the room. Are you sure?` })) return;
+      send({ t: "kick", id: b.dataset.kick });
+    });
+    /* 進行役の端末が落ちて戻ってこないとき、残った人が引きつげる */
+    const hostP = G.players.find(p => p.id === G.hostId);
+    $("claimWrap").style.display = (!host && hostP && !hostP.connected) ? "" : "none";
+    $("claimBtn").textContent = ja() ? `👑 進行役を引きつぐ（${hostP ? hostP.name : ""} さんが切断中）` : `👑 Take over as host (${hostP ? hostP.name : ""} is offline)`;
+    closeModal(); closeHost();
   }
   else if (G.phase === "cards") {
     showScreen("game");
+    hostTools();
     renderBoard(); renderStrip(); shown = {}; renderTokens();
-    $("turnPill").innerHTML = ja() ? "🏠 家庭カードをかくにん中" : "🏠 Checking family cards";
+    $("turnPill").innerHTML = `<span class="tp-txt">${ja() ? "🏠 家庭カードをかくにん中" : "🏠 Checking family cards"}</span>`;
     $("diceBtn").disabled = true;
     $("diceLabel").textContent = ja() ? "まっています" : "Waiting";
     $("diceFace").style.display = "none";
     if (YOU && !YOU.seen) { if (lastKey !== "card") showCard(false); }
     else {
-      const left = G.players.filter(p => !p.seen).map(p => p.name).join("、");
+      const yet = G.players.filter(p => !p.seen);
+      const names = yet.map(p => p.name + (p.connected ? "" : ja() ? "（切断中）" : " (offline)")).join(ja() ? "、" : ", ");
       lastKey = "waitcards";
       openModal(`<span class="m-tag" style="background:${R.TYPE_META.fam.tag}">🏠 ${L(R.TYPE_META.fam.label)}</span>
         <h2>${ja() ? "みんながカードを見ています" : "Everyone is checking their card"}</h2>
-        <p class="m-body">${ja() ? `まだの人：<b>${left}</b>` : `Still looking: <b>${left}</b>`}</p>
-        <button class="chip-btn" id="mAgainCard" style="display:block;margin:0 auto">${ja() ? "自分のカードをもう一度見る" : "See my card again"}</button>`);
+        <p class="m-body">${ja() ? `まだの人：<b>${names}</b>` : `Still looking: <b>${names}</b>`}</p>
+        <button class="chip-btn" id="mAgainCard" style="display:block;margin:0 auto">${ja() ? "自分のカードをもう一度見る" : "See my card again"}</button>
+        ${iAmHost() ? `<button class="chip-btn" id="mForce" style="display:block;margin:10px auto 0">${ja()
+          ? "▶ 待たずに始める（進行役）" : "▶ Start without them (host)"}</button>` : ""}`);
       $("mAgainCard").onclick = () => showCard(true);
+      if ($("mForce")) $("mForce").onclick = () => {
+        if (!ask({ ja: `まだカードを見ていない人（${names}）を待たずに始めます。よろしいですか？`,
+                   en: `Start without those who haven't opened their card (${names}). Are you sure?` })) return;
+        send({ t: "forceCards" });
+      };
     }
   }
   else if (G.phase === "play") {
     showScreen("game");
+    hostTools();
     if (!$("board").children.length) renderBoard();
     renderStrip();
     G.players.forEach(p => { if (shown[p.id] == null) shown[p.id] = p.pos; });
@@ -399,8 +507,9 @@ function render() {
     stepAnim();
     const cur = G.players[G.turn];
     const mine = cur && cur.id === MYPID;
-    $("turnPill").innerHTML = `<span class="p-dot" style="background:${cur.color}"></span>${ja()
-      ? `${cur.name} さんの番・${R.AGES[cur.pos]}歳` : `${cur.name}'s turn · Age ${R.AGES[cur.pos]}`}`;
+    $("turnPill").innerHTML = `<span class="p-dot" style="background:${cur.color}"></span>`
+      + `<span class="tp-txt">${ja() ? `${cur.name} さんの番・${R.AGES[cur.pos]}歳` : `${cur.name}'s turn · Age ${R.AGES[cur.pos]}`}</span>`
+      + (cur.connected ? "" : `<span class="tp-off">${ja() ? "⚠️ 切断中" : "⚠️ offline"}</span>`);
     const child = cur.pos < 4;
     $("diceFace").style.display = child ? "none" : "grid";
     $("diceFace").textContent = G.dice || "?";
@@ -410,12 +519,20 @@ function render() {
       : (ja() ? `${cur.name} さんの番` : `${cur.name}'s turn`);
     renderPending();
   }
-  else if (G.phase === "result") { showScreen("result"); closeModal(); showResult(); }
+  else if (G.phase === "result") { showScreen("result"); closeModal(); closeHost(); showResult(); }
+}
+
+/* 進行役だけに🛠を出し、パネルを開いたままなら中身を最新にする */
+function hostTools() {
+  $("hostBtn").style.display = iAmHost() ? "" : "none";
+  if (hostOpen()) renderHostPanel();
 }
 
 /* ---------- 結果発表 ---------- */
 function showResult() {
-  const sorted = [...G.players].sort((a, b) => b.happy - a.happy || b.money - a.money);
+  const playing = G.players.filter(p => !p.left);
+  const gone = G.players.filter(p => p.left);
+  const sorted = [...playing].sort((a, b) => b.happy - a.happy || b.money - a.money);
   const list = $("resultList");
   list.innerHTML = "";
   sorted.forEach((p, i) => {
@@ -447,7 +564,10 @@ function showResult() {
     list.appendChild(card);
   });
   list.querySelectorAll(".rv-btn").forEach(b => b.onclick = () => showRevealModal(b.dataset.p));
-  const totalUnseen = G.players.reduce((s, p) => s + p.unseen, 0);
+  $("resLeftNote").innerHTML = gone.length
+    ? (ja() ? `🚪 とちゅうで抜けた人：${gone.map(p => p.name).join("、")}` : `🚪 Left partway: ${gone.map(p => p.name).join(", ")}`)
+    : "";
+  const totalUnseen = playing.reduce((s, p) => s + p.unseen, 0);
   $("insightBox").innerHTML = ja() ? `
     <b>■ ふりかえりタイム</b><br>
     順位を決めたのは、お金の多さじゃなくて <b>♥ハッピー</b>。<br>
@@ -529,7 +649,7 @@ const whoChips = list => list.map(p => `<span class="who"><span class="p-dot" st
 function showAllDoorsModal() {
   const kt = v => v == null ? "" : (v.ja !== undefined ? v.ja : v);
   const map = new Map();
-  G.players.forEach(p => (p.doorLog || []).forEach(e => {
+  G.players.filter(p => !p.left).forEach(p => (p.doorLog || []).forEach(e => {
     const key = `${e.age}|${kt(e.title)}|${kt(e.variant)}`;
     if (!map.has(key)) map.set(key, { age: e.age, title: e.title, variant: e.variant, opts: e.opts, perOpt: e.opts.map(() => ({ chosen: [], locked: [], unseen: [] })) });
     const g = map.get(key);

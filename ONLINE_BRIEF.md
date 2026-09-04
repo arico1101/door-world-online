@@ -5,6 +5,7 @@
 ## これは何か
 教育ボードゲーム「トビラ せかい版」を、**参加者それぞれの端末で遊べる**ようにしたオンライン版。
 公開URL: https://tobira-online.tobira-online.workers.dev (Cloudflare Workers + Durable Objects・無料枠)
+GitHub: https://github.com/arico1101/door-world-online (`origin`・SSHで push)
 
 姉妹プロジェクト(どちらも別リポジトリ・現役):
 - /Users/arisa/door-world-game … 1画面をみんなで囲む「せかい版」。**ゲーム内容の正はこちら**
@@ -16,7 +17,9 @@
 - **家庭カードは持ち主の接続にしか送らない**(公開は名前・色・位置・おかね・まなび・♥のみ。結果発表で全公開)
 - 盤面・手番・全員の状態を全端末に同期。手番の人だけ操作でき、他の人には読み取り専用で同じ画面が映る
 - 結果発表・35歳のいまエンディング・ネタバラシ・トビラ一覧・ふりかえり・日英切り替え すべて実装済み
-- 2〜6人の通しプレイ自動テストが、ローカル・本番の両方で完走することを確認済み
+- **進行役メニュー(🛠)** … 当日、進行がとまったときの逃げ道。手番をとばす／カード確認を待たずに始める／参加者を外す(ロビー=名簿から削除・開始後=退出あつかいで結果にも出ない)／進行役をゆずる／進行役が落ちたら残った人が引きつぐ／いつでもロビーにもどす
+- 手番の人が切断していると、上の帯に「⚠️ 切断中」と出る
+- 2〜6人の通しプレイ自動テストと、進行役むけ操作の自動テストが、ローカル・本番の両方で完走することを確認済み
 
 ## ファイル構成
 - `src/index.js` … Worker + Room(Durable Object)。ゲーム進行の全判定
@@ -24,6 +27,7 @@
 - `public/app.js` … クライアント(表示と入力のみ)
 - `public/index.html` … 画面の骨格とCSS
 - `test/play.mjs` … 通しプレイの自動テスト(`N=人数 HOST=接続先 node test/play.mjs`)
+- `test/ops.mjs` … 進行役むけ操作の自動テスト(`HOST=接続先 node test/ops.mjs`)
 - `wrangler.toml` … Durable Objectは SQLite バックエンド(無料枠の条件)
 
 ## よく使うコマンド
@@ -32,6 +36,7 @@ export PATH="/usr/local/bin:$PATH"
 npx wrangler dev            # ローカル http://localhost:8787
 npx wrangler deploy         # 本番へ反映
 N=4 node test/play.mjs      # ローカルへ通しテスト
+node test/ops.mjs           # 進行役むけ操作のテスト
 HOST=wss://tobira-online.tobira-online.workers.dev N=4 node test/play.mjs   # 本番へ
 ```
 - Cloudflareはログイン済み(`wrangler whoami` で確認可)
@@ -39,6 +44,7 @@ HOST=wss://tobira-online.tobira-online.workers.dev N=4 node test/play.mjs   # �
 
 ## 守ること
 - **ゲームバランス・文言は1画面版(door-world-game)と同一に保つ**。ルールを変えるときは両方に反映する
+  - 進行役メニューはオンライン特有の運用機能なので、1画面版には反映しない(ゲームの中身を変えないこと)
 - 新しいテキストは必ず日英そろえて書く({ja,en} オブジェクト + L() ヘルパー)
 - 👁？？？の種明かしは結果発表まで伏せる。家庭カードの秘密を壊す変更をしない
 - デザイン: Zen Maru Gothic / クリーム#FBF8F1 + 茶#4A3A30 / 手描き風
