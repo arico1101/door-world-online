@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOBIRA World Edition Online — Facilitator Slides</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#78BE21; --crimson:#FF6858; --orange:#FFC04B; --teal:#00A3BD;
+  --brown:#4A3A30; --cream:#FBF8F1; --paper:#FFFFFF; --momo:#F291B5;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%; overflow:hidden; background:var(--cream);}
+body{
+  font-family:"Zen Maru Gothic",'Hiragino Maru Gothic ProN',sans-serif;
+  color:var(--brown); font-weight:700;
+}
+.num{font-family:"DotGothic16",monospace; font-weight:400;}
+
+/* ---------- slide frame ---------- */
+.slide{
+  display:none; position:absolute; inset:0;
+  flex-direction:column; align-items:center; justify-content:center;
+  /* safe margins so nothing is cut off on 4:3 projection */
+  padding:5vmin 12vmin 7vmin;
+  text-align:center; gap:3.2vmin;
+}
+.slide.active{display:flex;}
+
+/* ---------- chrome ---------- */
+#partChip{
+  position:fixed; top:2.4vmin; left:2.8vmin; z-index:10;
+  background:var(--brown); color:var(--cream);
+  border-radius:99px; padding:.7vmin 2.4vmin;
+  font-size:2vmin; font-weight:900; letter-spacing:.08em;
+  transform:rotate(-1.5deg);
+}
+#pageNum{
+  position:fixed; bottom:2vmin; right:2.8vmin; z-index:10;
+  font-size:2.2vmin; opacity:.45;
+}
+#navHint{
+  position:fixed; bottom:2vmin; left:2.8vmin; z-index:10;
+  font-size:1.7vmin; opacity:.35;
+}
+#progress{
+  position:fixed; top:0; left:0; height:.7vmin; background:var(--orange); z-index:10;
+  transition:width .25s ease;
+}
+
+/* ---------- typography ---------- */
+.kicker{
+  font-size:2.6vmin; font-weight:900; letter-spacing:.2em;
+  color:var(--paper); background:var(--teal);
+  border-radius:99px; padding:.8vmin 3.2vmin;
+  transform:rotate(-1deg);
+}
+.kicker.or{background:var(--orange); color:var(--brown);}
+.kicker.cr{background:var(--crimson);}
+.kicker.gr{background:var(--green);}
+h1{font-size:6.2vmin; font-weight:900; line-height:1.35; letter-spacing:.04em;}
+h1 .em{color:var(--crimson);}
+h1 .em-t{color:var(--teal);}
+.lead{font-size:3.1vmin; line-height:1.8; font-weight:700; max-width:78vw;}
+.lead b{font-weight:900; border-bottom:.6vmin solid var(--orange);}
+.small{font-size:2.2vmin; opacity:.7; font-weight:700;}
+
+/* ---------- parts ---------- */
+.band{
+  background:var(--brown); color:var(--cream);
+  border-radius:2.4vmin; padding:3.2vmin 5vmin;
+  font-size:3.4vmin; font-weight:900; line-height:1.8; max-width:82vw;
+}
+.band b{color:var(--orange);}
+.band .heart{color:var(--crimson);}
+
+.card{
+  background:var(--paper); border:.55vmin solid var(--brown); border-radius:2.4vmin;
+  padding:2.6vmin 3.6vmin; text-align:left;
+}
+.steps{display:flex; flex-direction:column; gap:2.2vmin; max-width:80vw;}
+.step{display:flex; align-items:center; gap:2.6vmin;}
+.step .no{
+  flex:none; width:6vmin; height:6vmin; border-radius:50%;
+  background:var(--orange); color:var(--brown);
+  display:grid; place-items:center; font-size:3.2vmin; font-weight:900;
+  border:.45vmin solid var(--brown);
+}
+.step p{font-size:3vmin; line-height:1.6; font-weight:700; text-align:left;}
+.step p b{font-weight:900; color:var(--crimson);}
+
+/* square types / online rules */
+.sq-list{display:flex; flex-direction:column; gap:1.6vmin; width:80vw; max-width:1400px;}
+.sq-row{display:flex; align-items:center; gap:2.4vmin; background:var(--paper);
+  border:.45vmin solid var(--brown); border-radius:2vmin; padding:1.4vmin 2.4vmin;}
+.sq-tag{
+  flex:none; width:22vmin; text-align:center; border-radius:1.4vmin;
+  border:.4vmin solid var(--brown); font-size:2.7vmin; font-weight:900; padding:1vmin 0;
+}
+.sq-row p{flex:1; font-size:2.6vmin; line-height:1.5; text-align:left; font-weight:700;}
+.sq-row p b{font-weight:900;}
+.t-income{background:#EDF7DC;} .t-cost{background:#FFE9E7;} .t-event{background:#FFF3DC;}
+.t-learn{background:#E0F4F8;} .t-door{background:var(--brown); color:var(--cream); border-color:var(--orange);}
+
+/* door logo */
+.door-mark{
+  width:14vmin; height:17.5vmin; background:var(--brown); border-radius:7vmin 7vmin 1.2vmin 1.2vmin;
+  display:grid; place-items:center;
+}
+.door-mark span{width:10.5vmin; height:14vmin; background:var(--teal);
+  border-radius:5.2vmin 5.2vmin 1vmin 1vmin; position:relative;}
+.door-mark span::after{content:""; position:absolute; right:1.4vmin; top:6.4vmin;
+  width:1.7vmin; height:1.7vmin; border-radius:50%; background:var(--orange);}
+
+.chips{display:flex; gap:1.8vmin; flex-wrap:wrap; justify-content:center;}
+.chip{background:var(--paper); border:.4vmin solid var(--brown); border-radius:99px;
+  padding:.9vmin 3vmin; font-size:2.4vmin; font-weight:900; white-space:nowrap;}
+
+/* join URL + QR */
+.url-band{
+  display:flex; align-items:center; gap:3vmin;
+  background:var(--paper); border:.55vmin solid var(--brown); border-radius:2.4vmin;
+  padding:1.8vmin 3.4vmin;
+}
+.url-band .qr{flex:none; width:16vmin; height:16vmin; border:.4vmin solid var(--brown);
+  border-radius:1.4vmin; overflow:hidden; background:#fff;}
+.url-band .qr svg{width:100%; height:100%; display:block;}
+.url-band .u-txt{text-align:left;}
+.url-band .u-txt small{display:block; font-size:2vmin; opacity:.65; margin-bottom:.6vmin;}
+.url-band .u-txt .u-url{font-size:2.9vmin; font-weight:400; word-break:break-all;}
+
+/* reflection Q */
+.q-no{
+  font-size:3vmin; font-weight:900; color:var(--paper); background:var(--crimson);
+  border-radius:99px; padding:.8vmin 4vmin; transform:rotate(-1.5deg); letter-spacing:.15em;
+}
+.q-text{font-size:4.6vmin; font-weight:900; line-height:1.6; max-width:84vw;}
+.q-text b{color:var(--teal);}
+
+/* chain of gaps */
+.chain{display:flex; align-items:center; gap:1.6vmin; flex-wrap:wrap; justify-content:center;}
+.chain .c-box{
+  background:var(--paper); border:.5vmin solid var(--brown); border-radius:2vmin;
+  padding:1.8vmin 3.4vmin; font-size:3.2vmin; font-weight:900;
+}
+.chain .c-box small{display:block; font-size:2vmin; font-weight:700; opacity:.65; margin-top:.4vmin;}
+.chain .c-arrow{font-size:4.5vmin; color:var(--crimson); font-weight:900;}
+
+/* timer */
+#timer{
+  font-size:22vmin; line-height:1;
+  color:var(--brown); letter-spacing:.05em;
+}
+#timer.warn{color:var(--crimson); animation:blink 1s step-end infinite;}
+@keyframes blink{50%{opacity:.35;}}
+.t-btns{display:flex; gap:1.8vmin;}
+.t-btns button{
+  font-family:inherit; font-size:2.6vmin; font-weight:900; color:var(--brown);
+  background:var(--paper); border:.45vmin solid var(--brown); border-radius:99px;
+  padding:1.2vmin 3.6vmin; cursor:pointer;
+}
+.t-btns button.main{background:var(--green); color:#fff; border-color:var(--brown);}
+.t-btns button:active{transform:translateY(.4vmin);}
+.play-notes{display:flex; gap:2vmin; flex-wrap:wrap; justify-content:center;}
+.play-notes .chip{font-size:2.2vmin;}
+
+/* 2-up list (results) */
+.flow-list{display:flex; flex-direction:column; gap:1.8vmin; max-width:78vw;}
+.flow-list .step p{font-size:2.9vmin;}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="partChip"></div>
+<div id="pageNum" class="num"></div>
+<div id="navHint">Use ← → keys</div>
+
+<!-- 1. Title -->
+<section class="slide" data-part="TOBIRA World Edition Online">
+  <div class="door-mark"><span></span></div>
+  <h1 style="font-size:7.4vmin; letter-spacing:.06em;">TOBIRA <span style="font-size:4.2vmin;">🌍 World Edition Online</span></h1>
+  <p class="lead">A life boardgame of money and options — living from age 6 to 35, somewhere in the world</p>
+  <div class="chips">
+    <span class="chip">👥 2–6 players per room</span>
+    <span class="chip">⏱ Play time ~25 min</span>
+    <span class="chip">📱 Join on your own device</span>
+  </div>
+</section>
+
+<!-- 2. Today's flow -->
+<section class="slide" data-part="Intro">
+  <div class="kicker">Today's flow</div>
+  <div class="steps">
+    <div class="step"><span class="no">1</span><p>How to play (about 10 min)</p></div>
+    <div class="step"><span class="no">2</span><p>Split into rooms and <b>join on your own device</b></p></div>
+    <div class="step"><span class="no">3</span><p>Play, room by room (<b>~25 min</b>)</p></div>
+    <div class="step"><span class="no">4</span><p>Results — the ranking, and a certain secret revealed</p></div>
+    <div class="step"><span class="no">5</span><p>Reflection — talk with the people in your room</p></div>
+  </div>
+</section>
+
+<!-- 3. What kind of game? -->
+<section class="slide" data-part="Intro">
+  <div class="kicker">What kind of game?</div>
+  <h1>You're born somewhere in the world,<br>and walk 29 years — from <span class="em-t">age 6</span> to <span class="em-t">35</span></h1>
+  <p class="lead">You don't choose where you're born.<br>Same dice, same board for everyone.<br>But <b>what you can see is different for each person</b> — that's this game.</p>
+</section>
+
+<!-- 4. Ranking = Happiness -->
+<section class="slide" data-part="Intro">
+  <div class="kicker cr">The most important rule</div>
+  <h1>The ranking isn't decided by money,<br>but by <span class="em">♥ Happiness</span></h1>
+  <div class="band">
+    Your ♥ count ＝ <b>how many of life's options you held — and chose with your own will</b>.<br>
+    💰 Money and 📚 ★ Learning are the <b>"keys"</b> that open them.
+  </div>
+</section>
+
+<!-- 5. How to join -->
+<section class="slide" data-part="Joining">
+  <div class="kicker or">📱 How to join</div>
+  <div class="steps" style="gap:1.8vmin;">
+    <div class="step"><span class="no">1</span><p>Split into groups of <b>2–6</b> (breakout rooms if we're online)</p></div>
+    <div class="step"><span class="no">2</span><p>Open the URL below on your own device (QR code works too)</p></div>
+    <div class="step"><span class="no">3</span><p>Enter the <b>6-letter room code</b> from your host, type your name, and tap "Join room"</p></div>
+    <div class="step"><span class="no">4</span><p>Once everyone is in, the host taps "Start game" — <b>no one can join after the start</b>, so gather everyone first!</p></div>
+  </div>
+  <div class="url-band">
+    <div class="qr"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 41 41" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h41v41H0z"/><path stroke="#4A3A30" d="M4 4.5h7m4 0h1m4 0h1m1 0h2m1 0h1m1 0h1m2 0h7M4 5.5h1m5 0h1m5 0h1m2 0h2m1 0h1m1 0h3m1 0h1m1 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m1 0h1m2 0h2m1 0h3m3 0h2m1 0h2m1 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m1 0h3m1 0h1m5 0h1m3 0h1m1 0h1m1 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h5m2 0h2m1 0h1m2 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h2m1 0h4m2 0h1m1 0h1m1 0h1m2 0h1m1 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M12 11.5h1m1 0h3m1 0h1m1 0h1m1 0h6M4 12.5h1m1 0h5m2 0h1m1 0h4m2 0h1m1 0h1m3 0h1m2 0h5M4 13.5h1m7 0h2m3 0h1m3 0h1m1 0h3m1 0h1m2 0h2m1 0h2m1 0h1M5 14.5h2m1 0h1m1 0h3m3 0h6m3 0h2m5 0h1m1 0h2M8 15.5h1m4 0h2m1 0h2m1 0h1m1 0h6m1 0h1m1 0h1m1 0h4M4 16.5h2m2 0h3m2 0h1m2 0h1m1 0h3m2 0h2m1 0h4m2 0h2m2 0h1M4 17.5h1m1 0h1m1 0h2m2 0h1m1 0h1m4 0h1m2 0h1m3 0h3m1 0h1m2 0h1m1 0h2M4 18.5h2m1 0h2m1 0h5m1 0h1m1 0h3m3 0h3m2 0h2m1 0h1m2 0h1M4 19.5h2m2 0h2m7 0h3m2 0h1m2 0h6m1 0h3M4 20.5h4m1 0h3m3 0h1m1 0h1m1 0h1m1 0h1m4 0h1m1 0h2m1 0h2m3 0h1M5 21.5h4m4 0h6m1 0h1m1 0h4m1 0h1m1 0h3m1 0h2m1 0h1M4 22.5h1m1 0h5m1 0h4m1 0h3m2 0h1m1 0h1m1 0h1m1 0h1m1 0h3m1 0h2M4 23.5h1m9 0h2m1 0h1m7 0h1m1 0h8M5 24.5h3m1 0h2m1 0h2m2 0h1m2 0h1m2 0h2m1 0h1m3 0h1m1 0h3m1 0h2M4 25.5h1m2 0h3m1 0h1m1 0h2m1 0h1m1 0h4m2 0h1m2 0h1m2 0h1m2 0h2m1 0h1M4 26.5h1m3 0h3m2 0h1m7 0h1m1 0h1m2 0h1m1 0h2m2 0h4M4 27.5h1m1 0h1m2 0h1m4 0h1m1 0h3m1 0h1m2 0h6m5 0h3M4 28.5h1m2 0h2m1 0h2m5 0h2m1 0h2m1 0h1m2 0h1m1 0h5m2 0h2M12 29.5h1m1 0h2m1 0h2m1 0h5m3 0h1m3 0h1m1 0h1m1 0h1M4 30.5h7m5 0h1m1 0h4m4 0h3m1 0h1m1 0h1m1 0h2M4 31.5h1m5 0h1m1 0h1m1 0h1m2 0h3m1 0h2m1 0h1m2 0h2m3 0h3m1 0h1M4 32.5h1m1 0h3m1 0h1m1 0h1m2 0h2m3 0h1m2 0h4m1 0h6m1 0h2M4 33.5h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h3m2 0h1m4 0h1m1 0h1m2 0h2m2 0h1M4 34.5h1m1 0h3m1 0h1m1 0h5m2 0h4m1 0h1m1 0h2m2 0h2M4 35.5h1m5 0h1m2 0h1m2 0h1m1 0h2m2 0h1m2 0h1m1 0h1m1 0h1m2 0h3M4 36.5h7m1 0h1m1 0h3m2 0h1m1 0h1m4 0h4m1 0h1m1 0h1m1 0h1"/></svg></div>
+    <div class="u-txt">
+      <small>Game URL</small>
+      <div class="u-url num">tobira-online.tobira-online.workers.dev</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Family Cards -->
+<section class="slide" data-part="Family Cards">
+  <div class="kicker or">🏠 Family Cards</div>
+  <div class="steps">
+    <div class="step"><span class="no">1</span><p>When the game starts, each player gets one Family Card. Yours appears <b>only on your own screen</b></p></div>
+    <div class="step"><span class="no">2</span><p>The card decides <b>the country and family you're born into</b> — starting money, daily cost of living, allowance, and a strength. Everyone starts from a different place</p></div>
+    <div class="step"><span class="no">3</span><p>Along the way you may meet <b>"？？？"</b>. Why? …that's a treat for after the game</p></div>
+  </div>
+  <p class="small">📵 Keep your screen to yourself — don't show it or share it</p>
+</section>
+
+<!-- 7. How to move -->
+<section class="slide" data-part="Rules">
+  <div class="kicker gr">🎲 How to move</div>
+  <div class="steps">
+    <div class="step"><span class="no">1</span><p><b>In childhood (ages 6–15)</b> there's no dice. Tap "Step forward" to move one square at a time — <b>these years build your base</b></p></div>
+    <div class="step"><span class="no">2</span><p>From <b>the school door at 15</b>, the dice comes in! On your turn, roll and follow the square you land on</p></div>
+    <div class="step"><span class="no">3</span><p>When everyone reaches <b>the goal at 35</b>, we move to the results</p></div>
+  </div>
+</section>
+
+<!-- 8. Square types -->
+<section class="slide" data-part="Rules">
+  <div class="kicker gr">🗺 Square types</div>
+  <div class="sq-list">
+    <div class="sq-row"><span class="sq-tag t-income">💰 Work</span><p>You earn pay: <b>base wage ＋ ★ Learning × multiplier</b> ＋ allowance. Both the wage and the multiplier <b>depend on where you were born</b>…!</p></div>
+    <div class="sq-row"><span class="sq-tag t-cost">💸 Expenses</span><p>Living costs money. Pay the fixed amount</p></div>
+    <div class="sq-row"><span class="sq-tag t-event">⚡ Events</span><p>Draw one card. Could be lucky, could be an accident</p></div>
+    <div class="sq-row"><span class="sq-tag t-learn">📚 Learning</span><p>A chance to invest in yourself. Even ¥0 options let you learn</p></div>
+    <div class="sq-row"><span class="sq-tag t-door">🚪 Doors</span><p><b>Glowing squares ＝ life's crossroads</b>. Land on one and choose your path</p></div>
+  </div>
+</section>
+
+<!-- 9. Doors and keys -->
+<section class="slide" data-part="Rules">
+  <div class="kicker gr">🔑 Doors and keys</div>
+  <div class="steps">
+    <div class="step"><span class="no">1</span><p>Good options need <b>keys</b> (money / ★ Learning). Without enough, the door is 🔒 locked</p></div>
+    <div class="step"><span class="no">2</span><p>A no-key (¥0) path is <b>always available</b></p></div>
+    <div class="step"><span class="no">3</span><p>You see the money cost before choosing. But <b>★ and ♥ stay hidden until you choose</b> — you can know the price, not the value</p></div>
+  </div>
+</section>
+
+<!-- 10. Scholarships -->
+<section class="slide" data-part="Rules">
+  <div class="kicker gr">🎓 Scholarships</div>
+  <div class="steps">
+    <div class="step"><span class="no">1</span><p>"Continue with a scholarship / aid group" is a <b>loan (¥480k total)</b>. Every payday, ¥60k is deducted — you keep repaying until 35</p></div>
+    <div class="step"><span class="no">2</span><p><b>If you know the right support</b>, you may find <b>a scholarship you never repay</b>. Knowing, by itself, is power</p></div>
+  </div>
+  <p class="small">⚠️ Stuck or confused? Let a facilitator know any time</p>
+</section>
+
+<!-- 11. Online etiquette -->
+<section class="slide" data-part="Rules">
+  <div class="kicker gr">📱 Playing online — the promises</div>
+  <div class="sq-list">
+    <div class="sq-row"><span class="sq-tag t-cost">📵 Secret</span><p><b>Keep your screen to yourself.</b> If we're on a video call, don't screen-share the game</p></div>
+    <div class="sq-row"><span class="sq-tag t-door">🚪 Turns</span><p>On your turn, choices appear on your screen. Between turns you'll see a <b>"Watching ◯◯'s turn"</b> view</p></div>
+    <div class="sq-row"><span class="sq-tag t-learn">🔌 Dropped out?</span><p>If your connection drops, just <b>reopen the same page</b> — you'll reconnect where you left off</p></div>
+    <div class="sq-row"><span class="sq-tag t-event">🚫 One tab only</span><p>Don't open the game in a second tab on the same device (you'd become a different player!)</p></div>
+  </div>
+</section>
+
+<!-- 12. Play time -->
+<section class="slide" data-part="Play">
+  <div class="kicker or">🎮 Play time!</div>
+  <div id="timer" class="num">25:00</div>
+  <div class="t-btns">
+    <button class="main" id="tStart">▶ Start</button>
+    <button id="tPause">⏸ Pause</button>
+    <button id="tMinus">−1 min</button>
+    <button id="tPlus">＋1 min</button>
+    <button id="tReset">↺ Reset</button>
+  </div>
+  <div class="play-notes">
+    <span class="chip">🏠 Family Cards stay secret to the end</span>
+    <span class="chip">📵 Don't show your screen</span>
+    <span class="chip">🔌 Dropped? Reopen the page</span>
+    <span class="chip">🏁 Ends when everyone reaches 35</span>
+  </div>
+</section>
+
+<!-- 13. Results -->
+<section class="slide" data-part="Results">
+  <div class="kicker cr">🎉 Results</div>
+  <div class="flow-list steps">
+    <div class="step"><span class="no">1</span><p>Ranking goes by <b>♥ count</b>! (Ties broken by money left)</p></div>
+    <div class="step"><span class="no">2</span><p><b>Family Cards are revealed</b> — you finally learn where everyone was born</p></div>
+    <div class="step"><span class="no">3</span><p><b>"At 35"</b> — read each player's ending</p></div>
+    <div class="step"><span class="no">4</span><p><b>The big reveal</b> — everything inside the "？？？" comes out</p></div>
+    <div class="step"><span class="no">5</span><p><b>The door list</b> — all 29 years of doors, including the paths you never took</p></div>
+  </div>
+</section>
+
+<!-- 14. Reflection intro -->
+<section class="slide" data-part="Reflection">
+  <div class="kicker">🗣 Reflection</div>
+  <h1>Talk with the people<br>in your room</h1>
+  <p class="lead">Here come five questions.<br>There are no right answers. Just say <b>what you felt</b>, as it is.</p>
+</section>
+
+<!-- 15. Q1 -->
+<section class="slide" data-part="Reflection">
+  <div class="q-no">Question 1</div>
+  <p class="q-text">Same work square, same number of ★ —<br><b>completely different pay</b>.<br>Was that about <b>effort</b>?</p>
+</section>
+
+<!-- 16. Q2 -->
+<section class="slide" data-part="Reflection">
+  <div class="q-no">Question 2</div>
+  <p class="q-text">For some players, more ★ alone didn't raise their pay.<br>What was <b>the other key</b><br>that made learning bear fruit?</p>
+</section>
+
+<!-- 17. Q3 -->
+<section class="slide" data-part="Reflection">
+  <div class="q-no">Question 3</div>
+  <p class="q-text">Which doors were <b>invisible</b> from your card?<br>And what could the child in Uganda who lost a parent<br><b>"see"</b>?</p>
+</section>
+
+<!-- 18. Q4 -->
+<section class="slide" data-part="Reflection">
+  <div class="q-no">Question 4</div>
+  <p class="q-text">The things you brought today —<br>a phone, free textbooks, school lunch.<br><b>Which Family Card's world</b> do they belong to?</p>
+</section>
+
+<!-- 19. Q5 -->
+<section class="slide" data-part="Reflection">
+  <div class="q-no">Question 5</div>
+  <p class="q-text">What <b>"keys"</b> could we<br>hand to orphans<br>around the world?</p>
+</section>
+
+<!-- 20. From the game to the real world -->
+<section class="slide" data-part="Wrap-up">
+  <div class="kicker cr">From the game to the real world</div>
+  <h1>The gap of where you're born<br>links onward</h1>
+  <div class="chain">
+    <div class="c-box">🌍 Gap at birth<small>starting money · daily cost of living</small></div>
+    <div class="c-arrow">→</div>
+    <div class="c-box">👁 Gap in what you see<small>support you know · info you can reach</small></div>
+    <div class="c-arrow">→</div>
+    <div class="c-box">📚 Gap in where learning pays<small>same ★, different pay</small></div>
+  </div>
+  <p class="lead">And that gap flows into <b>the next generation's "gap at birth"</b>.<br>The "？？？" and 🔒 you saw in the game truly exist in today's world.</p>
+</section>
+
+<!-- 21. Real-world support -->
+<section class="slide" data-part="Wrap-up">
+  <div class="kicker or">That's why support exists</div>
+  <div class="steps">
+    <div class="step"><span class="no">1</span><p>This chain <b>can't be broken by one person's effort alone</b>. That's why the world has people and systems supporting orphans</p></div>
+    <div class="step"><span class="no">2</span><p>Ashinaga runs <b>"Ashinaga Uganda"</b>, actually supporting orphans' education there — the model for the aid group in the game</p></div>
+    <div class="step"><span class="no">3</span><p><b>AAI</b> is a scholarship sending African orphans to universities abroad. Its key isn't money — it's learning and <b>a sense of mission</b>: a "promise" that raises leaders who give back to their home countries</p></div>
+  </div>
+</section>
+
+<!-- 22. The one thing -->
+<section class="slide" data-part="Wrap-up">
+  <div class="kicker">💡 The one thing to take home</div>
+  <div class="band" style="font-size:3.6vmin; line-height:2;">
+    Lacking a key to a door,<br>
+    and <b>not knowing the door exists</b> —<br>
+    those are completely different things.
+  </div>
+  <p class="lead">And one more: learning bears fruit only when <b>it connects to a place where it can live</b>.<br>This game is a <b>first step toward knowing</b>.<br>Tell someone about the world you saw today.</p>
+</section>
+
+<!-- 23. End -->
+<section class="slide" data-part="The End">
+  <div class="door-mark"><span></span></div>
+  <h1 style="font-size:7vmin;">Thank you!</h1>
+  <p class="lead">In front of you — and in front of a child somewhere in the world —<br>there are still so many doors waiting to be found.</p>
+</section>
+
+<script>
+/* ---------- slide navigation ---------- */
+const slides=[...document.querySelectorAll('.slide')];
+const partChip=document.getElementById('partChip');
+const pageNum=document.getElementById('pageNum');
+const progress=document.getElementById('progress');
+let cur=0;
+function show(i){
+  cur=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach((s,j)=>s.classList.toggle('active',j===cur));
+  partChip.textContent=slides[cur].dataset.part;
+  pageNum.textContent=(cur+1)+' / '+slides.length;
+  progress.style.width=((cur+1)/slides.length*100)+'%';
+}
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' '||e.key==='PageDown'){e.preventDefault();show(cur+1);}
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp'||e.key==='PageUp'){e.preventDefault();show(cur-1);}
+  if(e.key==='Home')show(0);
+  if(e.key==='End')show(slides.length-1);
+  if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+});
+show(0);
+
+/* ---------- play timer ---------- */
+const tEl=document.getElementById('timer');
+let total=25*60, left=total, tick=null;
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function render(){
+  tEl.textContent=fmt(left);
+  tEl.classList.toggle('warn',left<=180&&left>0);
+  if(left===0){tEl.textContent="Time's up!"; tEl.style.fontSize='14vmin';}
+  else tEl.style.fontSize='';
+}
+function stop(){clearInterval(tick); tick=null;}
+document.getElementById('tStart').onclick=()=>{
+  if(tick)return;
+  tick=setInterval(()=>{ if(left>0){left--;render();} if(left===0)stop(); },1000);
+};
+document.getElementById('tPause').onclick=stop;
+document.getElementById('tReset').onclick=()=>{stop(); left=total=25*60; render();};
+document.getElementById('tPlus').onclick=()=>{left+=60; total+=60; render();};
+document.getElementById('tMinus').onclick=()=>{left=Math.max(0,left-60); render();};
+render();
+</script>
+</body>
+</html>

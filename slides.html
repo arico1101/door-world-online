@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>トビラ せかい版 オンライン — 全体ゲーム進行スライド</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#78BE21; --crimson:#FF6858; --orange:#FFC04B; --teal:#00A3BD;
+  --brown:#4A3A30; --cream:#FBF8F1; --paper:#FFFFFF; --momo:#F291B5;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%; overflow:hidden; background:var(--cream);}
+body{
+  font-family:"Zen Maru Gothic",'Hiragino Maru Gothic ProN',sans-serif;
+  color:var(--brown); font-weight:700;
+}
+.num{font-family:"DotGothic16",monospace; font-weight:400;}
+
+/* ---------- slide frame ---------- */
+.slide{
+  display:none; position:absolute; inset:0;
+  flex-direction:column; align-items:center; justify-content:center;
+  /* 4:3投影でも欠けない安全マージン */
+  padding:5vmin 12vmin 7vmin;
+  text-align:center; gap:3.2vmin;
+}
+.slide.active{display:flex;}
+
+/* ---------- chrome (常時表示) ---------- */
+#partChip{
+  position:fixed; top:2.4vmin; left:2.8vmin; z-index:10;
+  background:var(--brown); color:var(--cream);
+  border-radius:99px; padding:.7vmin 2.4vmin;
+  font-size:2vmin; font-weight:900; letter-spacing:.08em;
+  transform:rotate(-1.5deg);
+}
+#pageNum{
+  position:fixed; bottom:2vmin; right:2.8vmin; z-index:10;
+  font-size:2.2vmin; opacity:.45;
+}
+#navHint{
+  position:fixed; bottom:2vmin; left:2.8vmin; z-index:10;
+  font-size:1.7vmin; opacity:.35;
+}
+#progress{
+  position:fixed; top:0; left:0; height:.7vmin; background:var(--orange); z-index:10;
+  transition:width .25s ease;
+}
+
+/* ---------- typography ---------- */
+.kicker{
+  font-size:2.6vmin; font-weight:900; letter-spacing:.2em;
+  color:var(--paper); background:var(--teal);
+  border-radius:99px; padding:.8vmin 3.2vmin;
+  transform:rotate(-1deg);
+}
+.kicker.or{background:var(--orange); color:var(--brown);}
+.kicker.cr{background:var(--crimson);}
+.kicker.gr{background:var(--green);}
+h1{font-size:6.2vmin; font-weight:900; line-height:1.35; letter-spacing:.04em;}
+h1 .em{color:var(--crimson);}
+h1 .em-t{color:var(--teal);}
+.lead{font-size:3.1vmin; line-height:1.8; font-weight:700; max-width:78vw;}
+.lead b{font-weight:900; border-bottom:.6vmin solid var(--orange);}
+.small{font-size:2.2vmin; opacity:.7; font-weight:700;}
+
+/* ---------- parts ---------- */
+.band{
+  background:var(--brown); color:var(--cream);
+  border-radius:2.4vmin; padding:3.2vmin 5vmin;
+  font-size:3.4vmin; font-weight:900; line-height:1.8; max-width:82vw;
+}
+.band b{color:var(--orange);}
+.band .heart{color:var(--crimson);}
+
+.card{
+  background:var(--paper); border:.55vmin solid var(--brown); border-radius:2.4vmin;
+  padding:2.6vmin 3.6vmin; text-align:left;
+}
+.steps{display:flex; flex-direction:column; gap:2.2vmin; max-width:80vw;}
+.step{display:flex; align-items:center; gap:2.6vmin;}
+.step .no{
+  flex:none; width:6vmin; height:6vmin; border-radius:50%;
+  background:var(--orange); color:var(--brown);
+  display:grid; place-items:center; font-size:3.2vmin; font-weight:900;
+  border:.45vmin solid var(--brown);
+}
+.step p{font-size:3vmin; line-height:1.6; font-weight:700; text-align:left;}
+.step p b{font-weight:900; color:var(--crimson);}
+
+/* マスの種類・おやくそく */
+.sq-list{display:flex; flex-direction:column; gap:1.6vmin; width:80vw; max-width:1400px;}
+.sq-row{display:flex; align-items:center; gap:2.4vmin; background:var(--paper);
+  border:.45vmin solid var(--brown); border-radius:2vmin; padding:1.4vmin 2.4vmin;}
+.sq-tag{
+  flex:none; width:22vmin; text-align:center; border-radius:1.4vmin;
+  border:.4vmin solid var(--brown); font-size:2.7vmin; font-weight:900; padding:1vmin 0;
+}
+.sq-row p{flex:1; font-size:2.6vmin; line-height:1.5; text-align:left; font-weight:700;}
+.sq-row p b{font-weight:900;}
+.t-income{background:#EDF7DC;} .t-cost{background:#FFE9E7;} .t-event{background:#FFF3DC;}
+.t-learn{background:#E0F4F8;} .t-door{background:var(--brown); color:var(--cream); border-color:var(--orange);}
+
+/* door logo */
+.door-mark{
+  width:14vmin; height:17.5vmin; background:var(--brown); border-radius:7vmin 7vmin 1.2vmin 1.2vmin;
+  display:grid; place-items:center;
+}
+.door-mark span{width:10.5vmin; height:14vmin; background:var(--teal);
+  border-radius:5.2vmin 5.2vmin 1vmin 1vmin; position:relative;}
+.door-mark span::after{content:""; position:absolute; right:1.4vmin; top:6.4vmin;
+  width:1.7vmin; height:1.7vmin; border-radius:50%; background:var(--orange);}
+
+.chips{display:flex; gap:1.8vmin; flex-wrap:wrap; justify-content:center;}
+.chip{background:var(--paper); border:.4vmin solid var(--brown); border-radius:99px;
+  padding:.9vmin 3vmin; font-size:2.4vmin; font-weight:900; white-space:nowrap;}
+
+/* 参加URL + QR */
+.url-band{
+  display:flex; align-items:center; gap:3vmin;
+  background:var(--paper); border:.55vmin solid var(--brown); border-radius:2.4vmin;
+  padding:1.8vmin 3.4vmin;
+}
+.url-band .qr{flex:none; width:16vmin; height:16vmin; border:.4vmin solid var(--brown);
+  border-radius:1.4vmin; overflow:hidden; background:#fff;}
+.url-band .qr svg{width:100%; height:100%; display:block;}
+.url-band .u-txt{text-align:left;}
+.url-band .u-txt small{display:block; font-size:2vmin; opacity:.65; margin-bottom:.6vmin;}
+.url-band .u-txt .u-url{font-size:2.9vmin; font-weight:400; word-break:break-all;}
+
+/* ふりかえりQ */
+.q-no{
+  font-size:3vmin; font-weight:900; color:var(--paper); background:var(--crimson);
+  border-radius:99px; padding:.8vmin 4vmin; transform:rotate(-1.5deg); letter-spacing:.15em;
+}
+.q-text{font-size:5vmin; font-weight:900; line-height:1.6; max-width:82vw;}
+.q-text b{color:var(--teal);}
+
+/* 格差の連鎖 */
+.chain{display:flex; align-items:center; gap:1.6vmin; flex-wrap:wrap; justify-content:center;}
+.chain .c-box{
+  background:var(--paper); border:.5vmin solid var(--brown); border-radius:2vmin;
+  padding:1.8vmin 3.4vmin; font-size:3.4vmin; font-weight:900;
+}
+.chain .c-box small{display:block; font-size:2vmin; font-weight:700; opacity:.65; margin-top:.4vmin;}
+.chain .c-arrow{font-size:4.5vmin; color:var(--crimson); font-weight:900;}
+
+/* タイマー */
+#timer{
+  font-size:22vmin; line-height:1;
+  color:var(--brown); letter-spacing:.05em;
+}
+#timer.warn{color:var(--crimson); animation:blink 1s step-end infinite;}
+@keyframes blink{50%{opacity:.35;}}
+.t-btns{display:flex; gap:1.8vmin;}
+.t-btns button{
+  font-family:inherit; font-size:2.6vmin; font-weight:900; color:var(--brown);
+  background:var(--paper); border:.45vmin solid var(--brown); border-radius:99px;
+  padding:1.2vmin 3.6vmin; cursor:pointer;
+}
+.t-btns button.main{background:var(--green); color:#fff; border-color:var(--brown);}
+.t-btns button:active{transform:translateY(.4vmin);}
+.play-notes{display:flex; gap:2vmin; flex-wrap:wrap; justify-content:center;}
+.play-notes .chip{font-size:2.2vmin;}
+
+/* 2-up list (けっか発表) */
+.flow-list{display:flex; flex-direction:column; gap:1.8vmin; max-width:78vw;}
+.flow-list .step p{font-size:2.9vmin;}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="partChip"></div>
+<div id="pageNum" class="num"></div>
+<div id="navHint">← → キーで進む</div>
+
+<!-- 1. タイトル -->
+<section class="slide" data-part="トビラ せかい版 オンライン">
+  <div class="door-mark"><span></span></div>
+  <h1 style="font-size:8.2vmin; letter-spacing:.1em;">トビラ <span style="font-size:4.6vmin;">🌍 せかい版 オンライン</span></h1>
+  <p class="lead">世界のどこかで6歳から35歳を生きる、おかねと選択肢の人生すごろく</p>
+  <div class="chips">
+    <span class="chip">👥 1ルーム 2〜6人</span>
+    <span class="chip">⏱ プレイ約25分</span>
+    <span class="chip">📱 自分の端末で参加</span>
+  </div>
+</section>
+
+<!-- 2. きょうのながれ -->
+<section class="slide" data-part="導入">
+  <div class="kicker">今日の流れ</div>
+  <div class="steps">
+    <div class="step"><span class="no">1</span><p>ゲームの説明（10分ほど）</p></div>
+    <div class="step"><span class="no">2</span><p>ルームに分かれて、<b>自分の端末で参加</b></p></div>
+    <div class="step"><span class="no">3</span><p>ルームごとにプレイ（<b>約25分</b>）</p></div>
+    <div class="step"><span class="no">4</span><p>結果発表 — 順位と、ある秘密の公開</p></div>
+    <div class="step"><span class="no">5</span><p>振り返り — 同じルームの人と話してみよう</p></div>
+  </div>
+</section>
+
+<!-- 3. なんのゲーム? -->
+<section class="slide" data-part="導入">
+  <div class="kicker">どんなゲーム？</div>
+  <h1>世界のどこかに生まれて、<br><span class="em-t">6歳</span>から<span class="em-t">35歳</span>までの29年間を歩きます</h1>
+  <p class="lead">生まれる場所は、選べない。<br>サイコロも盤面も、みんな同じ。<br>でも<b>「見える景色」は人によって違う</b>——それがこのゲームです。</p>
+</section>
+
+<!-- 4. 順位はハッピー -->
+<section class="slide" data-part="導入">
+  <div class="kicker cr">一番大事なルール</div>
+  <h1>順位を決めるのは、お金じゃなく<br><span class="em">♥ハッピーの数</span></h1>
+  <div class="band">
+    ♥の数 ＝ <b>人生の選択肢をたくさん持ち、自分の意思で選べた数</b>。<br>
+    💰お金と📚★まなびは、そのための<b>「カギ」</b>です。
+  </div>
+</section>
+
+<!-- 5. 参加のしかた -->
+<section class="slide" data-part="参加">
+  <div class="kicker or">📱 参加のしかた</div>
+  <div class="steps" style="gap:1.8vmin;">
+    <div class="step"><span class="no">1</span><p><b>2〜6人</b>のグループに分かれる（オンラインのときはブレイクアウトルーム）</p></div>
+    <div class="step"><span class="no">2</span><p>各自、下のURLを開く（QRコードでもOK）</p></div>
+    <div class="step"><span class="no">3</span><p>進行役から聞いた<b>6文字のあいことば</b>と、自分の名前を入れて「ルームに参加」</p></div>
+    <div class="step"><span class="no">4</span><p>全員そろったら、進行役が「ゲーム開始」——<b>あとからの途中参加はできない</b>ので、最初に全員そろってから！</p></div>
+  </div>
+  <div class="url-band">
+    <div class="qr"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 41 41" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h41v41H0z"/><path stroke="#4A3A30" d="M4 4.5h7m4 0h1m4 0h1m1 0h2m1 0h1m1 0h1m2 0h7M4 5.5h1m5 0h1m5 0h1m2 0h2m1 0h1m1 0h3m1 0h1m1 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m1 0h1m2 0h2m1 0h3m3 0h2m1 0h2m1 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m1 0h3m1 0h1m5 0h1m3 0h1m1 0h1m1 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h5m2 0h2m1 0h1m2 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h2m1 0h4m2 0h1m1 0h1m1 0h1m2 0h1m1 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M12 11.5h1m1 0h3m1 0h1m1 0h1m1 0h6M4 12.5h1m1 0h5m2 0h1m1 0h4m2 0h1m1 0h1m3 0h1m2 0h5M4 13.5h1m7 0h2m3 0h1m3 0h1m1 0h3m1 0h1m2 0h2m1 0h2m1 0h1M5 14.5h2m1 0h1m1 0h3m3 0h6m3 0h2m5 0h1m1 0h2M8 15.5h1m4 0h2m1 0h2m1 0h1m1 0h6m1 0h1m1 0h1m1 0h4M4 16.5h2m2 0h3m2 0h1m2 0h1m1 0h3m2 0h2m1 0h4m2 0h2m2 0h1M4 17.5h1m1 0h1m1 0h2m2 0h1m1 0h1m4 0h1m2 0h1m3 0h3m1 0h1m2 0h1m1 0h2M4 18.5h2m1 0h2m1 0h5m1 0h1m1 0h3m3 0h3m2 0h2m1 0h1m2 0h1M4 19.5h2m2 0h2m7 0h3m2 0h1m2 0h6m1 0h3M4 20.5h4m1 0h3m3 0h1m1 0h1m1 0h1m1 0h1m4 0h1m1 0h2m1 0h2m3 0h1M5 21.5h4m4 0h6m1 0h1m1 0h4m1 0h1m1 0h3m1 0h2m1 0h1M4 22.5h1m1 0h5m1 0h4m1 0h3m2 0h1m1 0h1m1 0h1m1 0h1m1 0h3m1 0h2M4 23.5h1m9 0h2m1 0h1m7 0h1m1 0h8M5 24.5h3m1 0h2m1 0h2m2 0h1m2 0h1m2 0h2m1 0h1m3 0h1m1 0h3m1 0h2M4 25.5h1m2 0h3m1 0h1m1 0h2m1 0h1m1 0h4m2 0h1m2 0h1m2 0h1m2 0h2m1 0h1M4 26.5h1m3 0h3m2 0h1m7 0h1m1 0h1m2 0h1m1 0h2m2 0h4M4 27.5h1m1 0h1m2 0h1m4 0h1m1 0h3m1 0h1m2 0h6m5 0h3M4 28.5h1m2 0h2m1 0h2m5 0h2m1 0h2m1 0h1m2 0h1m1 0h5m2 0h2M12 29.5h1m1 0h2m1 0h2m1 0h5m3 0h1m3 0h1m1 0h1m1 0h1M4 30.5h7m5 0h1m1 0h4m4 0h3m1 0h1m1 0h1m1 0h2M4 31.5h1m5 0h1m1 0h1m1 0h1m2 0h3m1 0h2m1 0h1m2 0h2m3 0h3m1 0h1M4 32.5h1m1 0h3m1 0h1m1 0h1m2 0h2m3 0h1m2 0h4m1 0h6m1 0h2M4 33.5h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h3m2 0h1m4 0h1m1 0h1m2 0h2m2 0h1M4 34.5h1m1 0h3m1 0h1m1 0h5m2 0h4m1 0h1m1 0h2m2 0h2M4 35.5h1m5 0h1m2 0h1m2 0h1m1 0h2m2 0h1m2 0h1m1 0h1m1 0h1m2 0h3M4 36.5h7m1 0h1m1 0h3m2 0h1m1 0h1m4 0h4m1 0h1m1 0h1m1 0h1"/></svg></div>
+    <div class="u-txt">
+      <small>ゲームのURL</small>
+      <div class="u-url num">tobira-online.tobira-online.workers.dev</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. 家庭カード -->
+<section class="slide" data-part="家庭カード">
+  <div class="kicker or">🏠 家庭カード</div>
+  <div class="steps">
+    <div class="step"><span class="no">1</span><p>ゲームが始まると、ひとり1枚「家庭カード」が配られる。あなたのカードは<b>自分の画面にだけ</b>表示される</p></div>
+    <div class="step"><span class="no">2</span><p>カードで<b>生まれる国と家庭</b>が決まる——最初のお金・1日の生活費・仕送り・とくい。スタート地点は人それぞれ</p></div>
+    <div class="step"><span class="no">3</span><p>途中で<b>「？？？」</b>に出会うかも。なぜかは……終わってからのお楽しみ</p></div>
+  </div>
+  <p class="small">📵 自分の画面は、ほかの人に見せない・映さないでください</p>
+</section>
+
+<!-- 7. すすみ方 -->
+<section class="slide" data-part="ルール">
+  <div class="kicker gr">🎲 進み方</div>
+  <div class="steps">
+    <div class="step"><span class="no">1</span><p><b>子ども時代（6〜15歳）</b>はサイコロなし。「一歩すすむ」ボタンで1マスずつ——人生の<b>土台をつくる時間</b></p></div>
+    <div class="step"><span class="no">2</span><p><b>15歳の進学トビラ</b>からはサイコロ！ 自分の番が来たら振って、止まったマスの指示に従う</p></div>
+    <div class="step"><span class="no">3</span><p>全員が<b>35歳のゴール</b>に着いたら、結果発表へ</p></div>
+  </div>
+</section>
+
+<!-- 8. マスの種類 -->
+<section class="slide" data-part="ルール">
+  <div class="kicker gr">🗺 マスの種類</div>
+  <div class="sq-list">
+    <div class="sq-row"><span class="sq-tag t-income">💰 おしごと</span><p>かせぎが入る。<b>基本給＋★まなび×掛け率</b>＋仕送り。基本給も掛け率も、<b>生まれた場所で違う</b>…！</p></div>
+    <div class="sq-row"><span class="sq-tag t-cost">💸 しゅっぴ</span><p>生きているとお金はかかる。決まった額を支払う</p></div>
+    <div class="sq-row"><span class="sq-tag t-event">⚡ できごと</span><p>カードを1枚引く。ラッキーもアクシデントも</p></div>
+    <div class="sq-row"><span class="sq-tag t-learn">📚 まなび</span><p>自分に投資するチャンス。0円でも学べる</p></div>
+    <div class="sq-row"><span class="sq-tag t-door">🚪 トビラ</span><p><b>光るマス＝人生の分岐点</b>。止まったら、どの道を選ぶか決める</p></div>
+  </div>
+</section>
+
+<!-- 9. トビラとカギ -->
+<section class="slide" data-part="ルール">
+  <div class="kicker gr">🔑 トビラとカギ</div>
+  <div class="steps">
+    <div class="step"><span class="no">1</span><p>いい選択には<b>カギ</b>（必要なお金・★まなび）がいる。足りないと 🔒 開けられない</p></div>
+    <div class="step"><span class="no">2</span><p>カギなし（0円）の道は、<b>いつでも必ず選べる</b></p></div>
+    <div class="step"><span class="no">3</span><p>お金の増減は選ぶ前に見える。でも<b>★と♥は選ぶまでわからない</b>——値段はわかっても、価値はわからない</p></div>
+  </div>
+</section>
+
+<!-- 10. 奨学金 -->
+<section class="slide" data-part="ルール">
+  <div class="kicker gr">🎓 奨学金</div>
+  <div class="steps">
+    <div class="step"><span class="no">1</span><p>「奨学金・支援団体の力で進学」は<b>貸与型（総額48万）</b>。働くたびに−6万ずつ、35歳まで返し続ける</p></div>
+    <div class="step"><span class="no">2</span><p><b>支援を知っている人</b>は、<b>返さなくていい奨学金</b>に出会えることも。「知っていること」自体が力になる</p></div>
+  </div>
+  <p class="small">⚠️ 困ったこと・わからないことがあれば、いつでも進行役に知らせてください</p>
+</section>
+
+<!-- 11. オンラインのおやくそく -->
+<section class="slide" data-part="ルール">
+  <div class="kicker gr">📱 オンラインのおやくそく</div>
+  <div class="sq-list">
+    <div class="sq-row"><span class="sq-tag t-cost">📵 ひみつ</span><p><b>自分の画面はほかの人に見せない</b>。オンラインのときは、ゲーム画面を画面共有しない</p></div>
+    <div class="sq-row"><span class="sq-tag t-door">🚪 じゅんばん</span><p>自分の番になると、画面に選択肢が出る。ほかの人の番のあいだは<b>「◯◯さんの番を見ています」</b>画面になる</p></div>
+    <div class="sq-row"><span class="sq-tag t-learn">🔌 切れたとき</span><p>通信が切れたら、<b>同じページを開き直せば</b>続きから戻れる</p></div>
+    <div class="sq-row"><span class="sq-tag t-event">🚫 タブは1つ</span><p>同じ端末で複数のタブを開かない（別のプレイヤーになってしまう！）</p></div>
+  </div>
+</section>
+
+<!-- 12. プレイタイム -->
+<section class="slide" data-part="プレイ">
+  <div class="kicker or">🎮 プレイタイム！</div>
+  <div id="timer" class="num">25:00</div>
+  <div class="t-btns">
+    <button class="main" id="tStart">▶ スタート</button>
+    <button id="tPause">⏸ 一時停止</button>
+    <button id="tMinus">−1分</button>
+    <button id="tPlus">＋1分</button>
+    <button id="tReset">↺ リセット</button>
+  </div>
+  <div class="play-notes">
+    <span class="chip">🏠 家庭カードは最後まで秘密</span>
+    <span class="chip">📵 画面は見せない</span>
+    <span class="chip">🔌 切れたら開き直す</span>
+    <span class="chip">🏁 全員35歳ゴールで終了</span>
+  </div>
+</section>
+
+<!-- 13. けっか発表 -->
+<section class="slide" data-part="結果発表">
+  <div class="kicker cr">🎉 結果発表</div>
+  <div class="flow-list steps">
+    <div class="step"><span class="no">1</span><p>順位は<b>♥の数</b>！（同じなら残ったお金）</p></div>
+    <div class="step"><span class="no">2</span><p><b>家庭カードを公開</b>——お互いが生まれた場所を初めて知る</p></div>
+    <div class="step"><span class="no">3</span><p><b>「35歳のいま」</b>——それぞれのエンディングを読んでみよう</p></div>
+    <div class="step"><span class="no">4</span><p><b>ネタバラシ</b>——「？？？」の中身を全部公開</p></div>
+    <div class="step"><span class="no">5</span><p><b>トビラ一覧</b>——29年間のすべてのトビラを、通らなかった道も</p></div>
+  </div>
+</section>
+
+<!-- 14. ふりかえり導入 -->
+<section class="slide" data-part="振り返り">
+  <div class="kicker">🗣 振り返り</div>
+  <h1>同じルームの人と、<br>話してみよう</h1>
+  <p class="lead">これから5つの問いを出します。<br>正解はありません。<b>感じたこと</b>をそのまま話してみてください。</p>
+</section>
+
+<!-- 15. Q1 -->
+<section class="slide" data-part="振り返り">
+  <div class="q-no">問い 1</div>
+  <p class="q-text">同じ「おしごとマス」・同じ★の数なのに、<br><b>かせぎがぜんぜん違った</b>。<br>それは、本人の<b>努力の差</b>だった？</p>
+</section>
+
+<!-- 16. Q2 -->
+<section class="slide" data-part="振り返り">
+  <div class="q-no">問い 2</div>
+  <p class="q-text">★を増やすだけでは、かせぎが伸びない人がいた。<br>「まなび」が実るために必要だった<br><b>もうひとつのカギ</b>は、何だった？</p>
+</section>
+
+<!-- 17. Q3 -->
+<section class="slide" data-part="振り返り">
+  <div class="q-no">問い 3</div>
+  <p class="q-text">あなたのカードから<b>見えなかったトビラ</b>は、どれだった？<br>逆に、親を亡くしたウガンダの子には<br>何が<b>「見えて」</b>いた？</p>
+</section>
+
+<!-- 18. Q4 -->
+<section class="slide" data-part="振り返り">
+  <div class="q-no">問い 4</div>
+  <p class="q-text">今日あなたが持ってきたもの——<br>スマホ、無料の教科書、給食。<br>それは、<b>どの家庭カードの世界</b>のものだった？</p>
+</section>
+
+<!-- 19. Q5 -->
+<section class="slide" data-part="振り返り">
+  <div class="q-no">問い 5</div>
+  <p class="q-text">日本にいる私たちが、<br>世界の遺児にわたせる<b>「カギ」</b>って、<br>何だろう？</p>
+</section>
+
+<!-- 20. ゲームから現実へ: 差の連鎖 -->
+<section class="slide" data-part="まとめ">
+  <div class="kicker cr">ゲームから現実へ</div>
+  <h1>生まれた場所の差は、<br>つながっていく</h1>
+  <div class="chain">
+    <div class="c-box">🌍 生まれの差<small>最初のお金・1日の生活費</small></div>
+    <div class="c-arrow">→</div>
+    <div class="c-box">👁 見える世界の差<small>知っている支援・出会える情報</small></div>
+    <div class="c-arrow">→</div>
+    <div class="c-box">📚 実る場の差<small>同じ★でも、かせぎが違う</small></div>
+  </div>
+  <p class="lead">そしてその差は、<b>次の世代の「生まれの差」</b>へ——。<br>ゲームで見た「？？？」や 🔒 は、いまの世界に本当にあります。</p>
+</section>
+
+<!-- 21. 実在の支え -->
+<section class="slide" data-part="まとめ">
+  <div class="kicker or">だから、「支援」がある</div>
+  <div class="steps">
+    <div class="step"><span class="no">1</span><p>この連鎖は、<b>本人の努力だけでは断ち切れない</b>。だから世界には、遺児を支える仕組みと人がいる</p></div>
+    <div class="step"><span class="no">2</span><p>あしなが育英会は<b>「あしながウガンダ」</b>で、現地の遺児の教育を実際に支えている——ゲームに出てきた支援団体のモデル</p></div>
+    <div class="step"><span class="no">3</span><p><b>AAI</b>は、アフリカの遺児を海外の大学へ送り出す奨学金。カギはお金ではなく、まなびと<b>「志」</b>——祖国に貢献するリーダーを育てる「約束」の仕組み</p></div>
+  </div>
+</section>
+
+<!-- 22. まとめ -->
+<section class="slide" data-part="まとめ">
+  <div class="kicker">💡 一番伝えたいこと</div>
+  <div class="band" style="font-size:4vmin; line-height:2;">
+    カギが足りずに開けられないのと、<br>
+    <b>扉があることすら知らない</b>のは、<br>
+    全然違う。
+  </div>
+  <p class="lead">そしてもうひとつ。学びが実るには、<b>それが活きる場につながること</b>。<br>このゲームは、<b>「知る」ための第一歩</b>。<br>今日見えた世界のこと、ぜひ誰かに話してみてください。</p>
+</section>
+
+<!-- 23. おわり -->
+<section class="slide" data-part="おわり">
+  <div class="door-mark"><span></span></div>
+  <h1 style="font-size:7vmin;">ありがとうございました</h1>
+  <p class="lead">あなたの前にも、世界のどこかの子の前にも、<br>まだ見ぬトビラがたくさんある。</p>
+</section>
+
+<script>
+/* ---------- スライド送り ---------- */
+const slides=[...document.querySelectorAll('.slide')];
+const partChip=document.getElementById('partChip');
+const pageNum=document.getElementById('pageNum');
+const progress=document.getElementById('progress');
+let cur=0;
+function show(i){
+  cur=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach((s,j)=>s.classList.toggle('active',j===cur));
+  partChip.textContent=slides[cur].dataset.part;
+  pageNum.textContent=(cur+1)+' / '+slides.length;
+  progress.style.width=((cur+1)/slides.length*100)+'%';
+}
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' '||e.key==='PageDown'){e.preventDefault();show(cur+1);}
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp'||e.key==='PageUp'){e.preventDefault();show(cur-1);}
+  if(e.key==='Home')show(0);
+  if(e.key==='End')show(slides.length-1);
+  if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+});
+show(0);
+
+/* ---------- プレイタイマー ---------- */
+const tEl=document.getElementById('timer');
+let total=25*60, left=total, tick=null;
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function render(){
+  tEl.textContent=fmt(left);
+  tEl.classList.toggle('warn',left<=180&&left>0);
+  if(left===0){tEl.textContent='終了！'; tEl.style.fontSize='14vmin';}
+  else tEl.style.fontSize='';
+}
+function stop(){clearInterval(tick); tick=null;}
+document.getElementById('tStart').onclick=()=>{
+  if(tick)return;
+  tick=setInterval(()=>{ if(left>0){left--;render();} if(left===0)stop(); },1000);
+};
+document.getElementById('tPause').onclick=stop;
+document.getElementById('tReset').onclick=()=>{stop(); left=total=25*60; render();};
+document.getElementById('tPlus').onclick=()=>{left+=60; total+=60; render();};
+document.getElementById('tMinus').onclick=()=>{left=Math.max(0,left-60); render();};
+render();
+</script>
+</body>
+</html>
