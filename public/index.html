@@ -27,9 +27,11 @@ button{font-family:inherit; cursor:pointer; border:none;}
 .screen.active{display:block;}
 
 /* ---------- setup ---------- */
-#setup{display:none; place-items:center; padding:24px;}
-#setup.active{display:grid;}
-.setup-card{width:min(560px,100%); text-align:center;}
+/* ロビーと待機画面は、パソコンの広い画面でも中央にそろえる
+   （min-height なので、中身が画面より高くなったときは上が切れずに伸びる） */
+#lobby, #wait{display:none; place-items:center; padding:24px;}
+#lobby.active, #wait.active{display:grid;}
+.setup-card{width:min(560px,100%); margin:0 auto; text-align:center;}
 .title-door{
   width:120px; height:150px; margin:0 auto 14px; position:relative;
   background:var(--brown); border-radius:60px 60px 8px 8px;
