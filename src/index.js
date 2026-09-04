@@ -96,6 +96,19 @@ export class Room {
     }
     return o;
   }
+  /* 「なにが見えていて、なにが見えていないか」は本人だけのもの。
+     ほかの人には、選択肢そのものと、本人だけへの注記を送らない。 */
+  pendingFor(pid) {
+    const pd = this.g.pending;
+    if (!pd || pd.for === pid) return pd;
+    const o = { ...pd };
+    delete o.pnote; delete o.pnotes;
+    if (pd.kind === "choice") {
+      delete o.opts; delete o.states; delete o.actor;
+      o.def = { title: pd.def.title, heavy: pd.def.heavy };   /* トビラの名前だけ（盤面に出ている情報） */
+    }
+    return o;
+  }
   stateFor(pid) {
     const reveal = this.g.phase === "result";
     const me = this.g.players.find(p => p.id === pid);
@@ -103,7 +116,7 @@ export class Room {
       t: "state", pid,
       g: {
         phase: this.g.phase, hostId: this.g.hostId, turn: this.g.turn, dice: this.g.dice,
-        pending: this.g.pending, heavyOn: this.g.heavyOn,
+        pending: this.pendingFor(pid), heavyOn: this.g.heavyOn,
         players: this.g.players.map(p => this.publicPlayer(p, reveal)),
       },
       you: me && me.fam ? {
@@ -267,8 +280,11 @@ export class Room {
     this.beginTurn();
   }
 
-  setInfo(type, title, body, fx, note) {
-    this.g.pending = { kind: "info", for: this.cur().id, type, title, body, note: note || null, fx: fx || {} };
+  setInfo(type, title, body, fx, note, pnote) {
+    this.g.pending = {
+      kind: "info", for: this.cur().id, type, title, body,
+      note: note || null, pnote: pnote || null, fx: fx || {},
+    };
   }
   setChoice(def, type, skipCount) {
     const p = this.cur();
@@ -354,12 +370,13 @@ export class Room {
     if (ev.kind === "info") {
       const n = p.perk === "tasukeai" ? 2 : 1;
       const revealed = R.revealTags(p, ev.reveal, n);
-      let note = revealed > 0
+      /* 「見えていない選択肢があった」こと自体がネタバレなので、本人だけに伝える */
+      let pnote = revealed > 0
         ? bi(`👁 見えていなかった選択肢が <b>${revealed}個</b>、見えるようになった！`, `👁 <b>${revealed}</b> hidden option${revealed > 1 ? "s" : ""} became visible!`)
         : null;
       const dn = R.checkDeai(p);
-      if (dn) note = note ? join(note, dn) : dn;
-      this.setInfo("event", ev.t, ev.d, {}, note);
+      if (dn) pnote = pnote ? join(pnote, dn) : dn;
+      this.setInfo("event", ev.t, ev.d, {}, null, pnote);
     }
     else if (ev.kind === "fair") this.setChoice(R.fairDef(), "event");
     else this.setInfo("event", ev.t, ev.d, { ...ev.fx });
@@ -370,7 +387,8 @@ export class Room {
     if (!o || g.pending.states[i] !== "open") return;
     if (g.logged && p.doorLog.length) p.doorLog[p.doorLog.length - 1].chosen = i;
     const fx = { ...o.fx };
-    const notes = [];
+    const notes = [];                                  /* みんなに見せる */
+    const pnotes = [];                                 /* 本人だけに見せる（見え方・家庭カードの強み） */
     if (fx.money) {
       fx.money = R.effectiveMoneyFx(p, o);
       if (fx.money !== o.fx.money && o.special !== "shogakukin") {
@@ -380,20 +398,20 @@ export class Room {
     }
     if (o.special === "revealAll" && p.hidden.length > 0) {
       p.hidden.length = 0;
-      notes.push(bi("👁 いままで見えていなかった選択肢が、ぜんぶ見えるようになった！", "👁 Every hidden option is now visible!"));
-      const dn = R.checkDeai(p); if (dn) notes.push(dn);
+      pnotes.push(bi("👁 いままで見えていなかった選択肢が、ぜんぶ見えるようになった！", "👁 Every hidden option is now visible!"));
+      const dn = R.checkDeai(p); if (dn) pnotes.push(dn);
     }
     if (o.special === "reveal2") {
       const n = R.revealTags(p, "any", p.perk === "tasukeai" ? 4 : 2);
-      if (n > 0) notes.push(bi(`👁 見えていなかった選択肢が <b>${n}個</b>、見えるようになった！`, `👁 <b>${n}</b> hidden option${n > 1 ? "s" : ""} became visible!`));
-      const dn = R.checkDeai(p); if (dn) notes.push(dn);
+      if (n > 0) pnotes.push(bi(`👁 見えていなかった選択肢が <b>${n}個</b>、見えるようになった！`, `👁 <b>${n}</b> hidden option${n > 1 ? "s" : ""} became visible!`));
+      const dn = R.checkDeai(p); if (dn) pnotes.push(dn);
     }
     if (o.special === "shienSupport") {
       p.shienDiscount = true;
       R.unhideTag(p, "shien");
       notes.push(bi("🎗 これから先、支援・まなび系のトビラが <b>最大50万ぶん安くなる</b>。カギ（必要なお金）も、じっさいにはらうお金も。",
                     `🎗 From now on, aid/learning doors cost up to <b>${fmEn(50)} less</b> — both the key you need and the money you actually pay.`));
-      const dn = R.checkDeai(p); if (dn) notes.push(dn);
+      const dn = R.checkDeai(p); if (dn) pnotes.push(dn);
     }
     if (o.special === "letter") p.letterIn = 2;
     if (o.unlock && p.mult < 10) {
@@ -418,9 +436,9 @@ export class Room {
     if (o.tag === "shien" && p.perk === "shienPro" && !p.shienUsed) {
       p.shienUsed = true;
       fx.learn = (fx.learn || 0) + 1;
-      notes.push(bi("✨ 支援を知っている強みで まなび+1", "✨ Knowing the support system: Learn +1"));
+      pnotes.push(bi("✨ 支援を知っている強みで まなび+1", "✨ Knowing the support system: Learn +1"));
     }
-    g.pending = { kind: "result", for: p.id, type: g.pending.type, title: o.t, body: o.d, notes, fx };
+    g.pending = { kind: "result", for: p.id, type: g.pending.type, title: o.t, body: o.d, notes, pnotes, fx };
   }
 
   /* info / result / goal のOKで、効果を反映してターンを終える */

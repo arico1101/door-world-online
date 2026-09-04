@@ -140,10 +140,59 @@ async function midReset() {
   [a, b].forEach(x => x.close());
 }
 
+/* ============ 4. 選択肢は本人の端末にしか届かない ============ */
+async function choicePrivacy() {
+  console.log("[4] 選んでいる最中、選択肢がほかの人に届かない");
+  const rm = room();
+  const a = await join(rm, "a", "A"), b = await join(rm, "b", "B");
+  await waitFor(a, g => g.players.length === 2, "2人そろう");
+  a.send({ t: "start", heavyOn: false });
+  await waitFor(a, g => g.phase === "cards", "カード確認へ");
+  a.send({ t: "seen" }); b.send({ t: "seen" });
+  await waitFor(a, g => g.phase === "play", "プレイ開始");
+
+  /* だれかがトビラの前に立つまで進める */
+  for (let i = 0; i < 300; i++) {
+    const g = a.g;
+    if (g.phase !== "play") break;
+    if (g.pending && g.pending.kind === "choice") break;
+    const cur = g.players[g.turn];
+    const c = cur.id === "a" ? a : b;
+    if (!g.pending) c.send({ t: "roll" });
+    else c.send({ t: "ok" });
+    await sleep(60);
+  }
+  if (!a.g.pending || a.g.pending.kind !== "choice") throw new Error("トビラにたどりつけなかった");
+  const actorId = a.g.pending.for;
+  const actor = actorId === "a" ? a : b;
+  const other = actorId === "a" ? b : a;
+
+  if (!actor.g.pending.opts || !actor.g.pending.states) throw new Error("本人に選択肢が届いていない");
+  passed++; console.log("  ok　本人には選択肢が届く");
+  await waitFor(other, g => g.pending && g.pending.kind === "choice", "ほかの人にも「選んでいる」ことは伝わる");
+  const seen = other.g.pending;
+  if (seen.opts || seen.states || seen.actor) throw new Error("ほかの人に選択肢が届いてしまっている: " + JSON.stringify(Object.keys(seen)));
+  passed++; console.log("  ok　ほかの人には選択肢そのものが届かない");
+  if (!seen.def || !seen.def.title) throw new Error("トビラの名前は伝わってほしい");
+  if (seen.def.variant) throw new Error("トビラの種類（都会/村など）まで伝わっている");
+  passed++; console.log("  ok　トビラの名前だけは伝わる");
+
+  /* 選んだあと：結果はみんなに、本人だけの注記は本人に */
+  const open = actor.g.pending.states.map((st, i) => st === "open" ? i : -1).filter(i => i >= 0);
+  if (open.length) {
+    actor.send({ t: "choose", i: open[0] });
+    await waitFor(other, g => g.pending && g.pending.kind === "result", "えらんだ結果はみんなに見える");
+    if (other.g.pending.pnotes) throw new Error("本人だけの注記がほかの人に届いている");
+    passed++; console.log("  ok　本人だけの注記はほかの人に届かない");
+  }
+  [a, b].forEach(x => x.close());
+}
+
 try {
   await lobbyOps();
   await gameOps();
   await midReset();
+  await choicePrivacy();
   console.log(`\nOK — ${passed} checks passed`);
   process.exit(0);
 } catch (e) {

@@ -253,6 +253,30 @@ h1.game-title{font-size:clamp(34px,8vw,52px); font-weight:900; letter-spacing:.1
   background:var(--paper); border:2px solid var(--teal); border-radius:12px;
   padding:10px 14px; font-size:13.5px; font-weight:700; line-height:1.8; margin-bottom:14px;
 }
+/* 本人にしか送られない注記（見え方や家庭カードの強みにふれるもの） */
+.m-note.priv{border-style:dashed; border-color:var(--fuji);}
+
+/* ---------- 人の番を見ているとき（自分の番とはっきり見た目を変える） ---------- */
+.modal.watching{
+  background:#F1ECE2; border-style:dashed; border-color:var(--stone);
+  box-shadow:0 6px 0 rgba(74,58,48,.14);
+}
+.modal.watching h2{font-size:clamp(18px,4vw,22px); opacity:.9;}
+.modal.watching .m-tag{opacity:.85;}
+.watch-head{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  background:var(--brown); color:#fff; border-radius:999px;
+  padding:7px 16px; font-size:13px; font-weight:900; margin-bottom:16px;
+}
+.watch-head .p-dot{width:14px; height:14px; border-color:#fff;}
+.watch-body{text-align:center; padding:4px 0 2px;}
+.watch-lead{font-size:14px; font-weight:700; line-height:1.9; opacity:.8;}
+.watch-door{
+  display:inline-block; background:var(--paper); border:2px dashed var(--brown);
+  border-radius:16px; padding:14px 22px; margin:12px 0 6px;
+  font-size:clamp(18px,4.5vw,22px); font-weight:900;
+}
+.watch-wait{font-size:14px; font-weight:900; margin:6px 0 12px; opacity:.7;}
 .fx-line{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 18px;}
 /* フォントのルール: DotGothic16は数値データ（サイコロ・ステータス値・年齢）のみ。文章はすべてZen Maru */
 .fx{

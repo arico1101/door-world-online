@@ -52,7 +52,12 @@ function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   $(id).classList.add("active");
 }
-function openModal(html) { $("modalBox").innerHTML = html; $("overlay").classList.add("open"); $("modalBox").scrollTop = 0; }
+function openModal(html, watching) {
+  $("modalBox").className = "modal" + (watching ? " watching" : "");
+  $("modalBox").innerHTML = html;
+  $("overlay").classList.add("open");
+  $("modalBox").scrollTop = 0;
+}
 function closeModal() { $("overlay").classList.remove("open"); $("modalBox").innerHTML = ""; lastKey = ""; }
 const isOpen = () => $("overlay").classList.contains("open");
 
@@ -326,7 +331,12 @@ function reqLabel(p, o) {
   if (o.req.maxMoney != null) parts.push(ja() ? `所得制限 おかね${fm(o.req.maxMoney)}未満` : `Income limit: under ${fm(o.req.maxMoney)}`);
   return parts.join(" ＋ ");
 }
-const waitingNote = who => `<div class="waiting-note">⏳ ${ja() ? `${who} さんが選んでいます…` : `Waiting for ${who}…`}</div>`;
+const waitingNote = who => `<div class="waiting-note">⏳ ${ja() ? `${who} さんが かくにん中…` : `Waiting for ${who}…`}</div>`;
+/* 見ているだけのときは、自分の番とはっきり見た目を変える */
+const watchHead = a => `<div class="watch-head"><span class="p-dot" style="background:${a.color}"></span>${
+  ja() ? `${a.name} さんの番を見ています` : `Watching ${a.name}'s turn`}</div>`;
+const privNote = v => (v && (!Array.isArray(v) || v.length))
+  ? `<div class="m-note priv">${(Array.isArray(v) ? v.map(L).join("<br>") : L(v))}</div>` : "";
 
 /* ---------- 保留中のできごと（サーバーから来る） ---------- */
 function renderPending() {
@@ -342,24 +352,39 @@ function renderPending() {
 
   if (pd.kind === "info") {
     const mm = R.TYPE_META[pd.type] || m;
-    openModal(`
+    openModal(`${mine ? "" : watchHead(actor)}
       <span class="m-tag" style="background:${mm.tag}">${mm.ic} ${L(mm.label)}</span>
       <h2>${L(pd.title)}</h2>
       <p class="m-body">${L(pd.body)}</p>
       ${pd.note ? `<div class="m-note">${L(pd.note)}</div>` : ""}
+      ${privNote(pd.pnote)}
       ${fxChips(pd.fx)}
-      ${mine ? `<button class="m-btn" id="mOk">OK</button>` : waitingNote(actor.name)}`);
+      ${mine ? `<button class="m-btn" id="mOk">OK</button>` : waitingNote(actor.name)}`, !mine);
     if (mine) $("mOk").onclick = () => { send({ t: "ok" }); };
   }
   else if (pd.kind === "result") {
-    openModal(`
-      <span class="m-tag" style="background:${m.tag}">${m.ic} ${ja() ? "えらんだ！" : "Chosen!"}</span>
+    openModal(`${mine ? "" : watchHead(actor)}
+      <span class="m-tag" style="background:${m.tag}">${m.ic} ${mine
+        ? (ja() ? "えらんだ！" : "Chosen!")
+        : (ja() ? `${actor.name} さんが えらんだ` : `${actor.name} chose`)}</span>
       <h2>${L(pd.title)}</h2>
       <p class="m-body">${L(pd.body)}${ja() ? "。" : "."}</p>
       ${pd.notes && pd.notes.length ? `<div class="m-note">${pd.notes.map(L).join("<br>")}</div>` : ""}
+      ${privNote(pd.pnotes)}
       ${fxChips(pd.fx)}
-      ${mine ? `<button class="m-btn" id="mOk">OK</button>` : waitingNote(actor.name)}`);
+      ${mine ? `<button class="m-btn" id="mOk">OK</button>` : waitingNote(actor.name)}`, !mine);
     if (mine) $("mOk").onclick = () => { send({ t: "ok" }); };
+  }
+  else if (pd.kind === "choice" && !mine) {
+    /* 何が見えていて何が見えていないかは、その人だけのもの。
+       ほかの人には、トビラの名前（盤面に出ているもの）と「待っている」ことだけを見せる */
+    openModal(`${watchHead(actor)}
+      <div class="watch-body">
+        <p class="watch-lead">${ja() ? "いま、このトビラの前に立っています。" : "Standing in front of this door."}</p>
+        <div class="watch-door">${pd.def.heavy ? "⚠️" : "🚪"} ${L(pd.def.title)}</div>
+        <div class="watch-wait">⏳ ${ja() ? `${actor.name} さんが えらんでいます…` : `${actor.name} is choosing…`}</div>
+        <p class="watch-lead">${ja() ? "えらび終わったら、みんなに結果が出ます。" : "The result appears for everyone once they choose."}</p>
+      </div>`, true);
   }
   else if (pd.kind === "choice") {
     const p = pd.actor;
@@ -385,7 +410,7 @@ function renderPending() {
           ${key2 ? `<span class="d-key">${ja() ? "カギ：" : "Key: "}${key2}${ok ? "" : short}</span>` : ""}${cost}
         </span></button>`;
     }).join("");
-    const stuck = !pd.states.includes("open");
+    const stuck = !(pd.states || []).includes("open");
     openModal(`
       <span class="m-tag" style="background:${m.tag}">${m.ic} ${pd.def.heavy ? L(R.TYPE_META.heavy.label) : L(m.label)}</span>
       <h2>${L(pd.def.title)}</h2>
@@ -405,12 +430,12 @@ function renderPending() {
     const loanNote = pd.loan > 0
       ? `<div class="m-note">${ja() ? `🎓 のこっていた奨学金 <b>${fm(pd.loan)}</b> をここで清算。<br>35歳——ようやく、返しおえた。`
         : `🎓 The remaining scholarship (<b>${fm(pd.loan)}</b>) is settled here.<br>Age 35 — finally paid off.`}</div>` : "";
-    openModal(`
+    openModal(`${mine ? "" : watchHead(actor)}
       <span class="m-tag" style="background:#4A3A30">🏁 ${L(R.TYPE_META.goal.label)}</span>
       <h2>${ja() ? `${actor.name} さん、35歳でゴール！` : `${actor.name} reached the goal at 35!`}</h2>
       <p class="m-body">${ja() ? `6歳からの29年間、おつかれさま！ ${pd.rankAt}番目のゴールです。` : `29 years from age 6 — well done! Finished #${pd.rankAt}.`}</p>
       ${loanNote}${fxChips(pd.fx)}
-      ${mine ? `<button class="m-btn" id="mOk">OK</button>` : waitingNote(actor.name)}`);
+      ${mine ? `<button class="m-btn" id="mOk">OK</button>` : waitingNote(actor.name)}`, !mine);
     if (mine) $("mOk").onclick = () => send({ t: "ok" });
   }
 }
