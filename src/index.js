@@ -68,11 +68,12 @@ export class Room {
   isActor(pid) { const p = this.cur(); return p && p.id === pid; }
 
   join(pid, name) {
-    if (!this.g) this.g = { phase: "lobby", hostId: pid, players: [], turn: 0, dice: null, pending: null, heavyOn: false, deck: [] };
+    /* mode：盤面の長さ。ロビーで進行役が選ぶ。既定は本番の「ぜんぶ」（6〜35歳・36マス） */
+    if (!this.g) this.g = { phase: "lobby", hostId: pid, players: [], turn: 0, dice: null, pending: null, heavyOn: false, mode: "full", deck: [] };
     const found = this.g.players.find(p => p.id === pid);
     if (found) { found.connected = true; if (name) found.name = name; return; }
     if (this.g.phase !== "lobby") return;              /* 開始後は新規参加できない（再接続は上で拾う） */
-    if (this.g.players.length >= 6) return;
+    if (this.g.players.length >= R.mode(this.g.mode).maxPlayers) return;
     const used = new Set(this.g.players.map(p => p.color));
     this.g.players.push({
       id: pid, name: name || `Player ${this.g.players.length + 1}`,
@@ -90,9 +91,10 @@ export class Room {
       done: p.done, rankAt: p.rankAt, seen: p.seen, left: !!p.left,
     };
     if (reveal) {                                       /* 結果発表で全公開 */
-      o.fam = p.fam; o.perk = p.perk; o.mult = p.mult; o.aai = p.aai;
-      o.hidden = p.hidden; o.deaiUsed = p.deaiUsed; o.initMoney = p.initMoney;
+      o.fam = p.fam; o.perk = p.perk; o.mult = p.mult; o.aai = p.aai; o.univ = p.univ;
+      o.hidden = p.hidden; o.deaiUsed = p.deaiUsed; o.initMoney = p.initMoney; o.initLearn = p.initLearn;
       o.open = p.open; o.locked = p.locked; o.unseen = p.unseen; o.doorLog = p.doorLog;
+      o.loan = p.loan;                                  /* 25歳では返し終わらない。残額を結果発表に出す */
     }
     return o;
   }
@@ -116,12 +118,20 @@ export class Room {
       t: "state", pid,
       g: {
         phase: this.g.phase, hostId: this.g.hostId, turn: this.g.turn, dice: this.g.dice,
-        pending: this.pendingFor(pid), heavyOn: this.g.heavyOn,
+        pending: this.pendingFor(pid), heavyOn: this.g.heavyOn, mode: this.g.mode,
         players: this.g.players.map(p => this.publicPlayer(p, reveal)),
       },
       you: me && me.fam ? {
         fam: me.fam, hidden: me.hidden, perk: me.perk, mult: me.mult, allow: me.allow,
         loan: me.loan, aai: me.aai, shienDiscount: me.shienDiscount, seen: me.seen,
+        /* 自分のトビラの記録。すべて本人が画面で見たことのある数なので、ここで渡してよい */
+        open: me.open, locked: me.locked, unseen: me.unseen,
+        /* 「じぶんが何を選んだか」だけ。えらばなかった選択肢＝？？？の中身は
+           ここでも絶対に渡さない（結果発表のネタバラシまで取っておく） */
+        myChoices: (me.doorLog || []).filter(e => e.chosen != null).map(e => ({
+          age: e.age, door: e.title, variant: e.variant,
+          t: e.opts[e.chosen].t, d: e.opts[e.chosen].d, fx: e.appliedFx || e.opts[e.chosen].fx,
+        })),
       } : null,
     };
   }
@@ -139,7 +149,13 @@ export class Room {
       const p = g.players.find(x => x.id === pid);
       if (p && m.name) p.name = String(m.name).slice(0, 12);
     }
-    else if (m.t === "start" && pid === g.hostId && g.phase === "lobby" && g.players.length >= 2) {
+    else if (m.t === "setmode" && pid === g.hostId && g.phase === "lobby" && R.MODES[m.mode]) {
+      g.mode = m.mode;
+      /* 短い盤面に切りかえたとき、上限より多く入っていたら後から来た人を戻す */
+      const max = R.MODES[m.mode].maxPlayers;
+      while (g.players.length > max) { const out = g.players.pop(); this.socks.delete(out.id); }
+    }
+    else if (m.t === "start" && pid === g.hostId && g.phase === "lobby" && g.players.length >= R.mode(g.mode).minStart) {
       this.deal(!!m.heavyOn);
     }
     else if (m.t === "seen" && g.phase === "cards") {
@@ -241,15 +257,17 @@ export class Room {
         fam, perk: fam.perk, hidden: [...fam.hide],
         pos: 0, money: fam.money, initMoney: fam.money, allow: fam.allow,
         learn: 1 + ((fam.perk === "kinben" || fam.perk === "kokusai") ? 1 : 0), happy: 0,
-        mult: fam.rural ? 5 : 10, aai: false, loan: 0,
+        initLearn: 1 + ((fam.perk === "kinben" || fam.perk === "kokusai") ? 1 : 0),
+        mult: fam.rural ? 5 : 10, aai: false, univ: false, loan: 0,
         open: 0, locked: 0, unseen: 0, doorLog: [],
         shienDiscount: false, shienUsed: false, deaiUsed: false,
-        hadHeavy: false, disasterTurns: 0, letterIn: null,
+        hadHeavy: false, disasterTurns: 0, letterIn: null, wageShown: false,
         done: false, rankAt: null, seen: false,
       });
     });
     g.heavyOn = heavyOn;
     g.deck = [];
+    g.talkDone = false;                                 /* 22歳の「みんなで話す」は1ゲームに1回 */
     g.phase = "cards";
   }
 
@@ -266,8 +284,13 @@ export class Room {
     const g = this.g, p = this.cur();
     const steps = p.pos < 4 ? 1 : 1 + Math.floor(Math.random() * 6);
     g.dice = p.pos < 4 ? null : steps;
-    let target = Math.min(p.pos + steps, R.SQUARES.length - 1);
-    for (let i = p.pos + 1; i < target; i++) if (R.SQUARES[i].stop) { target = i; break; }
+    const M = R.mode(g.mode);
+    let target = Math.min(p.pos + steps, M.SQUARES.length - 1);
+    /* 「みんなで話す」マスは、いちばんに着いた人だけを止める。
+       一度おこなったあとは、ただの通り道になる（全員ぶん止めると時間が足りない） */
+    for (let i = p.pos + 1; i < target; i++) {
+      if (M.SQUARES[i].stop && !(M.SQUARES[i].t === "talk" && g.talkDone)) { target = i; break; }
+    }
     p.pos = target;
     this.resolveSquare();
   }
@@ -294,30 +317,43 @@ export class Room {
     });
     if (!skipCount) {
       states.forEach(s => { if (s === "unseen") p.unseen++; else if (s === "open") p.open++; else p.locked++; });
-      p.doorLog.push({ title: def.title, variant: def.variant, age: R.AGES[p.pos], opts: def.opts, states, chosen: null });
+      p.doorLog.push({ title: def.title, variant: def.variant, age: R.mode(this.g.mode).AGES[p.pos], opts: def.opts, states, chosen: null });
       this.g.logged = true;
     } else this.g.logged = false;
     this.g.pending = {
       kind: "choice", for: p.id, type: type || "choice", def: { title: def.title, body: def.body, variant: def.variant, heavy: !!def.heavy },
       opts: def.opts, states,
       /* カギの表示計算に使う。ここに出る値はどれも選択画面で見えているもの */
-      actor: { name: p.name, money: p.money, learn: p.learn, pos: p.pos, perk: p.perk, mult: p.mult, shienDiscount: p.shienDiscount },
+      actor: { name: p.name, money: p.money, learn: p.learn, pos: p.pos, perk: p.perk, mult: p.mult, shienDiscount: p.shienDiscount, univ: p.univ },
     };
   }
 
   resolveSquare() {
-    const g = this.g, p = this.cur(), sq = R.SQUARES[p.pos];
+    const g = this.g, p = this.cur(), M = R.mode(g.mode), sq = M.SQUARES[p.pos];
     if (sq.t === "income") {
-      let amt, title, note = null;
       if (sq.fixed != null) {
-        amt = sq.fixed;
-        title = sq.name;
-        note = bi("はじめての、自分のかせぎ！", "Your first money of your own!");
-      } else {
-        amt = p.fam.wage + p.learn * p.mult + p.allow;
-        const job = R.jobTitle(p);
-        title = bi(`${job.ic} ${R.AGES[p.pos]}歳・いまのしごと：${job.t.ja}`, `${job.ic} Age ${R.AGES[p.pos]} · Current job: ${job.t.en}`);
-        note = bi(
+        /* はじめてのお手伝いは、子ども時代の一拍としてモーダルのまま残す */
+        this.setInfo("income", sq.name, bi("はじめての、自分のかせぎ！", "Your first money of your own!"), { money: sq.fixed });
+        return;
+      }
+      let amt = p.fam.wage + p.learn * p.mult + p.allow;
+      const job = R.jobTitle(p);
+      const title = bi(`${job.ic} ${M.AGES[p.pos]}歳・いまのしごと：${job.t.ja}`, `${job.ic} Age ${M.AGES[p.pos]} · Current job: ${job.t.en}`);
+      /* 毎回変わる情報（災害・返済）は、かならず本文に出す */
+      let extra = null;
+      if (p.disasterTurns > 0) {
+        amt -= 10;
+        extra = join(extra, bi(`⚠️ 災害の影響で −10万（あと${p.disasterTurns}ターン）`, `⚠️ Disaster: −${fmEn(10)} (${p.disasterTurns} turns left)`));
+      }
+      if (p.loan > 0) {
+        const pay = Math.min(6, p.loan);
+        p.loan -= pay; amt -= pay;
+        extra = join(extra, bi(`🎓 奨学金の返済 −${pay}万（のこり${p.loan}万）`, `🎓 Scholarship repayment −${fmEn(pay)} (${fmEn(p.loan)} left)`));
+      }
+      if (!p.wageShown) {
+        /* かせぎの式と「生まれた場所で基本給がちがう」は学びの核なので、最初の1回はモーダルでじっくり見せる */
+        p.wageShown = true;
+        let note = bi(
           `かせぎは <b>基本給${fmJa(p.fam.wage)} ＋ まなび×${fmJa(p.mult)}${p.allow > 0 ? " ＋ 仕送り" + fmJa(p.allow) : ""}</b><br>まなびが増えると、しごともかせぎも変わっていく`,
           `Pay = <b>base ${fmEn(p.fam.wage)} + Learn × ${fmEn(p.mult)}${p.allow > 0 ? " + allowance " + fmEn(p.allow) : ""}</b><br>As learning grows, your job and pay change too`);
         if (p.fam.wage < 20) note = join(note, bi(
@@ -326,31 +362,47 @@ export class Room {
         if (p.mult < 10) note = join(note, bi(
           `📉 いまの場所では、まなびがかせぎにつながりにくい（★×5万）。<b>スキルが活きる場</b>につながるトビラがあれば——`,
           `📉 Where you live, learning hardly turns into pay (★×${fmEn(5)}). If only a door led to <b>a place where skills matter</b>—`));
-        if (p.disasterTurns > 0) {
-          amt -= 10;
-          note = join(note, bi(`⚠️ 災害の影響で −10万（あと${p.disasterTurns}ターン）`, `⚠️ Disaster: −${fmEn(10)} (${p.disasterTurns} turns left)`));
-        }
-        if (p.loan > 0) {
-          const pay = Math.min(6, p.loan);
-          p.loan -= pay; amt -= pay;
-          note = join(note, bi(`🎓 奨学金の返済 −${pay}万（のこり${p.loan}万）`, `🎓 Scholarship repayment −${fmEn(pay)} (${fmEn(p.loan)} left)`));
-        }
+        if (extra) note = join(note, extra);
+        this.setInfo("income", title, note, { money: amt });
+      } else {
+        /* 2回目からは式だけ。1回目の長い説明はくり返さない（読む時間を増やさないため） */
+        const body = bi(
+          `かせぎ ＝ 基本給${fmJa(p.fam.wage)} ＋ まなび★${p.learn}×${fmJa(p.mult)}${p.allow > 0 ? " ＋ 仕送り" + fmJa(p.allow) : ""}`,
+          `Pay = base ${fmEn(p.fam.wage)} + Learn ★${p.learn} × ${fmEn(p.mult)}${p.allow > 0 ? " + allowance " + fmEn(p.allow) : ""}`);
+        this.setInfo("income", title, body, { money: amt }, extra);
       }
-      this.setInfo("income", title, note, { money: amt });
     }
     else if (sq.t === "cost") {
       this.setInfo("cost", sq.name, bi("生きているとお金はかかる。固定費、だいじ。", "Living costs money. Watch those fixed costs."), { money: -sq.amt });
     }
     else if (sq.t === "event") {
-      if (g.heavyOn && !p.hadHeavy && p.pos >= 8 && Math.random() < 0.3) { this.setChoice(R.heavyDef(p), "heavy"); return; }
+      /* できごとマスは3つ(#2/#6/#16)しかなく、うち必ず止まるのは10歳の#2だけ。
+         本番版のしきい(pos>=8)のままだと、ONにしても13%の人にしか起きなかった。
+         #2から起こりうるようにして、早い時期に起きたほうが「そこから支援に出会う」
+         その先の人生が残るぶん、教材としても効く。
+         skipCount=true：これはトビラではなくライフイベントなので、
+         結果発表の「出会ったトビラ」には数えない（手紙イベントと同じ扱い） */
+      if (g.heavyOn && !p.hadHeavy && p.pos >= M.heavyFrom && Math.random() < 0.3) { this.setChoice(R.heavyDef(p), "heavy", true); return; }
       this.drawEvent();
     }
-    else if (sq.t === "learn") this.setChoice(R.choiceDef("learnSq", p), "learn");
-    else if (sq.t === "choice") this.setChoice(R.choiceDef(sq.key, p), "choice");
+    else if (sq.t === "talk") {
+      /* 2人目からは素通り。数字は一切動かさない */
+      if (g.talkDone) return this.endTurn();
+      g.talkDone = true;
+      this.setInfo("talk", R.TALK.title, R.TALK.body, {},
+        bi(R.TALK.asks.ja + "<br><br>" + R.TALK.note.ja, R.TALK.asks.en + "<br><br>" + R.TALK.note.en));
+    }
+    else if (sq.t === "learn") this.setChoice(R.choiceDef("learnSq", p, M), "learn");
+    else if (sq.t === "choice") this.setChoice(R.choiceDef(sq.key, p, M), "choice");
     else if (sq.t === "goal") {
       p.done = true;
       p.rankAt = g.players.filter(x => x.done).length;
-      g.pending = { kind: "goal", for: p.id, rankAt: p.rankAt, loan: p.loan, fx: { happy: p.rankAt === 1 ? 1 : 0, money: p.loan > 0 ? -p.loan : 0 } };
+      /* 「ぜんぶ」（35歳ゴール）は、のこった奨学金をここで一括清算する。
+         「みじかめ」（25歳ゴール）は清算しない——現実でも25歳では返し終わらないので、
+         残額をそのまま背負ったまま結果発表へ行く */
+      g.pending = { kind: "goal", for: p.id, rankAt: p.rankAt, loan: p.loan,
+                    fx: { happy: p.rankAt === 1 ? 1 : 0,
+                          money: (M.settleLoan && p.loan > 0) ? -p.loan : 0 } };
     }
     else this.endTurn();
   }
@@ -368,8 +420,11 @@ export class Room {
     }
     if (!ev) return this.endTurn();
     if (ev.kind === "info") {
-      const n = p.perk === "tasukeai" ? 2 : 1;
-      const revealed = R.revealTags(p, ev.reveal, n);
+      /* 数えるのはタグの数ではなく、これから出会う選択肢の数。
+         タグ数だと「1個見えるようになった」と言われて盤面が何も変わらないことがある */
+      const before = R.hiddenOptionCount(p, p.pos, R.mode(this.g.mode));
+      R.revealTags(p, ev.reveal, p.perk === "tasukeai" ? 2 : 1);
+      const revealed = before - R.hiddenOptionCount(p, p.pos, R.mode(this.g.mode));
       /* 「見えていない選択肢があった」こと自体がネタバレなので、本人だけに伝える */
       let pnote = revealed > 0
         ? bi(`👁 見えていなかった選択肢が <b>${revealed}個</b>、見えるようになった！`, `👁 <b>${revealed}</b> hidden option${revealed > 1 ? "s" : ""} became visible!`)
@@ -384,6 +439,13 @@ export class Room {
 
   applyChoice(i) {
     const g = this.g, p = this.cur(), o = g.pending.opts[i];
+    /* 開けられる扉がひとつもないときの「今回は見送る」(i=-1)。
+       いまの盤面では全トビラにカギなしの選択肢があるので起きないが、
+       受け口がないと、将来そうなった瞬間に進行が止まったまま動かなくなる */
+    if (i < 0) {
+      if (g.pending.states.includes("open")) return;   /* 開く扉があるのに見送るのは不可 */
+      return this.endTurn();
+    }
     if (!o || g.pending.states[i] !== "open") return;
     if (g.logged && p.doorLog.length) p.doorLog[p.doorLog.length - 1].chosen = i;
     const fx = { ...o.fx };
@@ -402,7 +464,9 @@ export class Room {
       const dn = R.checkDeai(p); if (dn) pnotes.push(dn);
     }
     if (o.special === "reveal2") {
-      const n = R.revealTags(p, "any", p.perk === "tasukeai" ? 4 : 2);
+      const before = R.hiddenOptionCount(p, p.pos, R.mode(this.g.mode));
+      R.revealTags(p, "any", p.perk === "tasukeai" ? 4 : 2);
+      const n = before - R.hiddenOptionCount(p, p.pos, R.mode(this.g.mode));   /* タグ数ではなく選択肢の数 */
       if (n > 0) pnotes.push(bi(`👁 見えていなかった選択肢が <b>${n}個</b>、見えるようになった！`, `👁 <b>${n}</b> hidden option${n > 1 ? "s" : ""} became visible!`));
       const dn = R.checkDeai(p); if (dn) pnotes.push(dn);
     }
@@ -414,6 +478,11 @@ export class Room {
       const dn = R.checkDeai(p); if (dn) pnotes.push(dn);
     }
     if (o.special === "letter") p.letterIn = 2;
+    if (o.univ && !p.univ) {
+      p.univ = true;
+      notes.push(bi("🎓 大学へ——ここから先、<b>大学を出た人にだけ見えている道</b>がある。",
+                    "🎓 University — from here, <b>some roads continue only for those who finish it</b>."));
+    }
     if (o.unlock && p.mult < 10) {
       p.mult = 10;
       notes.push(bi("🔓 スキルが活きる場につながった！ これから、まなびが <b>★×10万</b> でかせぎになる。",
@@ -421,16 +490,17 @@ export class Room {
     }
     if (o.special === "aai") {
       p.aai = true;
-      notes.push(bi("🤝 AAIは『志』の奨学金——卒業したら、リーダーシップで祖国に貢献する約束。あなたの「大きな夢」は、祖国とともにある。",
-                    `🤝 AAI is a scholarship of purpose — a promise to lead and give back to your home country. Your "big dream" now belongs with your homeland.`));
+      /* ショート版には「大きな夢」のトビラがないので、約束の行き先はエンディングで受ける */
+      notes.push(bi("🤝 AAIは『志』の奨学金——卒業したら、リーダーシップで祖国に貢献する約束。この約束は、25歳のあなたの暮らしになっていく。",
+                    `🤝 AAI is a scholarship of purpose — a promise to lead and give back to your home country. That promise becomes the life you have at 25.`));
     }
     if (o.special === "shogakukin") {
       if (p.shienDiscount || p.perk === "shienPro") {
         notes.push(bi("🎗 支援を知っていたおかげで<b>返さなくていい奨学金</b>に出会えた！", "🎗 Because you knew the support system, you found <b>a scholarship you never repay</b>!"));
       } else {
         p.loan = 48;
-        notes.push(bi("🎓 これは<b>貸与型</b>（総額48万）。働きはじめたら、かせぎから<b>すこしずつ（−6万）</b>、35歳まで返していく。",
-                      `🎓 This is <b>a loan</b> (${fmEn(48)} total). Once you work, you repay <b>bit by bit (−${fmEn(6)})</b> until you're 35.`));
+        notes.push(bi("🎓 これは<b>貸与型</b>（総額48万）。働きはじめたら、かせぎから<b>すこしずつ（−6万）</b>返していく。<br>——25歳になっても、たぶん返し終わらない。",
+                      `🎓 This is <b>a loan</b> (${fmEn(48)} total). Once you work, you repay <b>bit by bit (−${fmEn(6)})</b>.<br>— And at 25, you probably still won't be done.`));
       }
     }
     if (o.tag === "shien" && p.perk === "shienPro" && !p.shienUsed) {
@@ -438,6 +508,8 @@ export class Room {
       fx.learn = (fx.learn || 0) + 1;
       pnotes.push(bi("✨ 支援を知っている強みで まなび+1", "✨ Knowing the support system: Learn +1"));
     }
+    /* 本人が「じぶんの選択」を見返すための記録。実際にきいた効果のほうを残す */
+    if (g.logged && p.doorLog.length) p.doorLog[p.doorLog.length - 1].appliedFx = { ...fx };
     g.pending = { kind: "result", for: p.id, type: g.pending.type, title: o.t, body: o.d, notes, pnotes, fx };
   }
 
@@ -446,7 +518,7 @@ export class Room {
     const g = this.g, p = this.cur(), pd = g.pending;
     if (pd.kind === "goal") {
       if (p.rankAt === 1) p.happy += 1;
-      if (p.loan > 0) { p.money -= p.loan; p.loan = 0; }
+      if (R.mode(g.mode).settleLoan && p.loan > 0) { p.money -= p.loan; p.loan = 0; }
     } else if (pd.kind === "info" || pd.kind === "result") {
       R.applyFx(p, pd.fx || {});
     } else return;                                   /* choice はボタンで決める */

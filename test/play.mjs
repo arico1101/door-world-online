@@ -1,6 +1,7 @@
 /* サーバー(Durable Object)を直接WebSocketで叩いて、最後まで通しでプレイする自動テスト */
 const HOST = process.env.HOST || "ws://localhost:8787";
 const N = Number(process.env.N || 4);
+const MODE = process.env.MODE || "full";      /* full=ぜんぶ(36マス) / short=みじかめ(24マス) */
 const ROOM = "T" + Math.random().toString(36).slice(2, 7).toUpperCase();
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -33,7 +34,11 @@ function act(c) {
     return;
   }
   if (g.phase === "lobby") {
-    if (c.pid === g.hostId && g.players.length >= N) setTimeout(()=>send(c, { t: "start", heavyOn: true }), 50);
+    if (c.pid === g.hostId && g.players.length >= N) {
+      /* 盤面の長さを選んでから始める */
+      if ((g.mode || "full") !== MODE) { send(c, { t: "setmode", mode: MODE }); return; }
+      setTimeout(()=>send(c, { t: "start", heavyOn: true }), 50);
+    }
     return;
   }
   if (g.phase === "cards") { if (!c.seen) { c.seen = true; c.hidden0 = (c.you&&c.you.hidden)||[]; c.fam0=c.you&&c.you.fam.id; send(c, { t: "seen" }); } return; }
