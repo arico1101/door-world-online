@@ -260,6 +260,27 @@ h1.game-title{font-size:clamp(32px,8vw,48px); font-weight:900; letter-spacing:.1
 .d-cost.minus{color:#C25B5B;} .d-cost.plus{color:#4FA85E;}
 .d-cost s{opacity:.55; margin-right:3px; font-weight:700;}
 
+/* あいことばのチップ */
+.room-chip{flex:none; display:inline-flex; align-items:center; gap:5px; background:var(--card);
+  border-radius:999px; padding:5px 12px; font-family:inherit; font-size:12.5px; font-weight:900;
+  letter-spacing:.14em; color:var(--btn); box-shadow:var(--sh-s); cursor:pointer;}
+.room-chip:active{transform:translateY(1px);}
+.room-chip.copied{background:var(--ok); color:#1F5B3A;}
+@media (max-width:560px){ .logo{display:none;} }
+
+/* 他人がえらんでいるあいだの帯 */
+.watch-bar{position:fixed; left:0; right:0; bottom:calc(76px + env(safe-area-inset-bottom));
+  z-index:45; display:none; align-items:center; gap:10px; width:min(560px,calc(100% - 24px));
+  margin:0 auto; background:var(--card); border-radius:16px; padding:9px 14px;
+  box-shadow:var(--sh); border:2px solid #E3EDF4;}
+.watch-bar.on{display:flex;}
+.watch-bar .av{width:32px; height:32px; border-radius:50%; flex:none; border:2px solid var(--line);
+  background-color:#F7FBFD; background-size:cover; background-position:center 16%;}
+.watch-bar .wb-txt{flex:1; min-width:0; font-size:12.5px; font-weight:900; line-height:1.5;}
+.watch-bar .wb-txt small{display:block; font-size:11px; font-weight:700; color:var(--sub);}
+.watch-bar .wb-hint{flex:none; font-size:10.5px; font-weight:700; color:var(--sub); max-width:150px; line-height:1.45;}
+@media (max-width:560px){ .watch-bar .wb-hint{display:none;} }
+
 /* 観戦 */
 .modal.watching{background:#F8FAFC;}
 .watch-head{display:flex; align-items:center; justify-content:center; gap:8px; background:var(--btn);
@@ -549,6 +570,8 @@ body.host-open #overlay{display:none !important;}
   <div class="sticky-head">
     <div class="topbar">
       <div class="logo" id="logoTxt">トビラ</div>
+      <!-- あいことば。途中で入りなおす人に伝えられるよう、ゲーム中もずっと出しておく -->
+      <button class="room-chip" id="roomChip" title=""></button>
       <div class="turn-pill" id="turnPill"></div>
       <button class="help-btn" id="hostBtn" style="display:none"><svg class="ic"><use href="#ic-tools"/></svg><span class="lbl" id="hostBtnLabel">進行</span></button>
       <button class="help-btn" id="seBtn" data-se="off"><svg class="ic"><use href="#ic-sound"/></svg><span class="lbl" id="seBtnLabel">音</span></button>
@@ -558,6 +581,8 @@ body.host-open #overlay{display:none !important;}
     <div class="players-strip" id="playersStrip"></div>
   </div>
   <div class="board-wrap"><svg id="board" viewBox="0 0 1160 800"></svg></div>
+  <!-- 他人がえらんでいるあいだの帯。画面をふさがないので、待つあいだも盤面と自分のカードが見られる -->
+  <div class="watch-bar" id="watchBar"></div>
   <div class="controls">
     <button class="dice-btn" id="diceBtn" data-se="off">
       <span class="dice-face" id="diceFace"></span>
