@@ -289,7 +289,11 @@ export class Room {
     /* 「みんなで話す」マスは、いちばんに着いた人だけを止める。
        一度おこなったあとは、ただの通り道になる（全員ぶん止めると時間が足りない） */
     for (let i = p.pos + 1; i < target; i++) {
-      if (M.SQUARES[i].stop && !(M.SQUARES[i].t === "talk" && g.talkDone)) { target = i; break; }
+      const sq = M.SQUARES[i];
+      /* stopChance：必ず止まるのではなく、その確率で止まるマス（留学のトビラ）。
+         ぜんぶ止めると全員が出会ってしまい、飛びこされるままだと出会えない人が多すぎる */
+      const stops = sq.stop || (sq.stopChance != null && Math.random() < sq.stopChance);
+      if (stops && !(sq.t === "talk" && g.talkDone)) { target = i; break; }
     }
     p.pos = target;
     this.resolveSquare();

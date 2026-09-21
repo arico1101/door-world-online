@@ -194,7 +194,18 @@ const SQ_FULL = [
   {t:"income", name:{ja:"おしごと",en:"Work"}, sub:{ja:"はたらいて、かせぐ",en:"work and earn"}},
   {t:"cost", name:{ja:"家族のための出費",en:"Family expenses"}, amt:40, sub:{ja:"支えるほうにまわる",en:"now you do the supporting"}},
   {t:"event", sub:{ja:"なにが起きる…？",en:"what happens…?"}},
-  {t:"choice", name:{ja:"留学",en:"Abroad"}, key:"kaigai", sub:{ja:"海のむこうへ",en:"across the sea"}},
+  /* このトビラだけ stopChance を持つ。あしなが事業そのものを表す一枚（AAI）なので、
+     飛びこされて一度も出会わない人が多すぎると、出前授業でAAIの話につながらない。
+     いっぽうで必ず止まる（stop:true）にすると全員が出会ってしまい、
+     「機会は、あった人となかった人がいる」という手ざわりが消える。
+     そこで「飛びこそうとしたとき、この確率で止まる」にして、
+     出会える割合を7割に合わせている。
+
+     実測（4人×60〜150ゲーム／遺児家庭 n=78〜210・ばらつき±4%）:
+       なし 36〜40% ／ 0.52 → 約70%(暫定) ／ 0.62 → 78% ／ 0.80 → 91% ／ 1.00 → 100%
+     ⚠️ 0.52 は上の表からの内挿で、この値そのものでの通し計測はまだしていない。
+        確かめるには test/aai-rate.mjs を回す（遺児家庭で68〜72%に入れば合格）。 */
+  {t:"choice", name:{ja:"留学",en:"Abroad"}, key:"kaigai", stopChance:0.52, sub:{ja:"海のむこうへ",en:"across the sea"}},
   {t:"learn", sub:{ja:"じぶんに投資する",en:"invest in yourself"}},
   {t:"income", name:{ja:"おしごと",en:"Work"}, sub:{ja:"はたらいて、かせぐ",en:"work and earn"}},
   {t:"choice", name:{ja:"学びなおし",en:"Relearn"}, key:"manabinaoshi", sub:{ja:"もう一度、学ぶ",en:"learning again"}},
