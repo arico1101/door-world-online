@@ -96,6 +96,11 @@ function showScreen(id) {
 /* パネルの外を押したときにすること。null のあいだは外を押しても閉じない。
    トビラやできごとは選ばずに閉じられると進行が止まるので、既定は閉じない側にしておく */
 let modalDismiss = null;
+/* userModal：いま開いているのが「自分でボタンを押して開いたもの」か
+   （じぶんのカード・あそびかた・ネタバラシ・トビラ一覧）。
+   これが true のあいだは、サーバーから状態が届いても勝手に閉じない。
+   以前は状態が届くたびに閉じていて、ネタバラシを開いた直後に消える不具合になっていた。 */
+let userModal = false;
 function openModal(html, watching, onDismiss) {
   $("modalBox").className = "modal" + (watching ? " watching" : "");
   $("modalBox").innerHTML = html;
@@ -104,7 +109,7 @@ function openModal(html, watching, onDismiss) {
   modalDismiss = onDismiss || null;
 }
 function closeModal() {
-  $("overlay").classList.remove("open"); $("modalBox").innerHTML = ""; lastKey = ""; modalDismiss = null;
+  $("overlay").classList.remove("open"); $("modalBox").innerHTML = ""; lastKey = ""; modalDismiss = null; userModal = false;
 }
 const isOpen = () => $("overlay").classList.contains("open");
 /* 外側は、下の閉じるボタンとまったく同じことをする */
@@ -123,8 +128,23 @@ $("joinBtn").onclick = () => {
 };
 $("startBtn").onclick = () => send({ t: "start", heavyOn: $("heavyToggle").checked });
 $("againBtn").onclick = () => send({ t: "again" });
-$("cardBtn").onclick = () => { if (!isOpen() && YOU) showCard(true); };
-$("helpBtnGame").onclick = () => { if (!isOpen()) renderRules(0); };
+/* 自分で開くパネル。他人の番のモーダルの上には重ねてよく、閉じたら元の画面にもどる。
+   自分の番の最中は開かない（トビラを選んでいる途中の画面が巻きもどってしまうため） */
+const openOverPending = fn => {
+  if (userModal) return;                                  /* すでに自分で開いている */
+  if (!isOpen()) return fn(() => render());
+  if (G && G.pending && G.pending.for !== MYPID) return fn(() => { lastKey = ""; render(); });
+};
+$("cardBtn").onclick = () => { if (YOU) openOverPending(cb => showCard(true, cb)); };
+$("helpBtnGame").onclick = () => openOverPending(() => renderRules(0));
+/* あいことばは、押すとコピーできる（途中で入りなおす人に伝えるため） */
+$("roomChip").onclick = async () => {
+  if (!ROOM) return;
+  try { await navigator.clipboard.writeText(ROOM); } catch { return; }
+  const el = $("roomChip");
+  el.classList.add("copied");
+  setTimeout(() => el.classList.remove("copied"), 1200);
+};
 $("hostBtn").onclick = () => { if (hostOpen()) closeHost(); else renderHostPanel(); };
 $("claimBtn").onclick = () => send({ t: "claimHost" });
 
@@ -899,11 +919,36 @@ function pendingSe(pd, mine) {
   return pd.type === "heavy" ? "bad" : "pop";
 }
 
+/* 他人がえらんでいるあいだ、画面の下に出す帯。モーダルとちがい操作をふさがない */
+function showWatchBar(info) {
+  const bar = $("watchBar");
+  if (!bar) return;
+  if (!info) { bar.classList.remove("on"); bar.innerHTML = ""; return; }
+  const { who, door } = info;
+  bar.innerHTML = `<span class="av" style="${faceBg(who)}"></span>
+    <span class="wb-txt"><b>${who.name}</b>${ja() ? " さんが えらんでいます…" : " is choosing…"}
+      <small>${ic(door && door.heavy ? "bolt" : "door", "s")} ${L((door && door.title) || {ja:"トビラの前",en:"at a door"})}</small></span>
+    <span class="wb-hint">${ja() ? "そのあいだ、じぶんのカードや盤面を見られます" : "Meanwhile you can check your card and the board"}</span>`;
+  bar.classList.add("on");
+}
+
 /* ---------- 保留中のできごと（サーバーから来る） ---------- */
 function renderPending() {
   const pd = G.pending;
-  if (!pd) { if (isOpen() && lastKey) closeModal(); return; }
+  /* 自分で開いたものは、状態が届いても消さない（閉じたときに render() から描き直される） */
+  if (userModal) return;
+  if (!pd) { showWatchBar(null); if (isOpen() && lastKey) closeModal(); return; }
   if (animTimer || diceBusy) return;            /* サイコロが止まり、コマが動き終わってから出す */
+  /* 他人がトビラの前でえらんでいるあいだは、全画面でふさがない。
+     盤面と自分のカード・あそびかたに手が届くようにして、待ち時間を手持ちぶさたにしない */
+  if (pd.kind === "choice" && pd.for !== MYPID) {
+    const who = G.players.find(p => p.id === pd.for) || { name: "?", color: R.PCOLORS[0] };
+    if (isOpen() && lastKey) closeModal();
+    showWatchBar({ who, door: pd.def });
+    lastKey = JSON.stringify(pd);
+    return;
+  }
+  showWatchBar(null);
   const key = JSON.stringify(pd);
   if (key === lastKey && isOpen()) return;
   lastKey = key;
@@ -946,17 +991,6 @@ function renderPending() {
         ${mine ? `<button class="m-btn" id="mOk">OK</button>` : waitingNote(actor.name)}
       </div>`, !mine);
     if (mine) $("mOk").onclick = () => { send({ t: "ok" }); };
-  }
-  else if (pd.kind === "choice" && !mine) {
-    /* 何が見えていて何が見えていないかは、その人だけのもの。
-       ほかの人には、トビラの名前（盤面に出ているもの）と「待っている」ことだけを見せる */
-    openModal(`${watchHead(actor)}
-      <div class="watch-body">
-        <p class="watch-lead">${ja() ? "いま、このトビラの前に立っています。" : "Standing in front of this door."}</p>
-        <div class="watch-door">${ic(pd.def.heavy ? "bolt" : "door")} ${L(pd.def.title)}</div>
-        <div class="watch-wait">${ja() ? `${actor.name} さんが えらんでいます…` : `${actor.name} is choosing…`}</div>
-        <p class="watch-lead">${ja() ? "えらび終わったら、みんなに結果が出ます。" : "The result appears for everyone once they choose."}</p>
-      </div>`, true);
   }
   else if (pd.kind === "choice") {
     /* 開くかどうか・いくらかかるかは、押すまで伏せておく。
@@ -1112,6 +1146,7 @@ function myChoiceList() {
 
 /* ---------- 家庭カード（自分のぶんだけ） ---------- */
 function showCard(review, onClose) {
+  userModal = true;   /* 自分で開いたものなので、状態が届いても閉じない */
   if (!YOU) return;
   se("card");
   const p = YOU;
@@ -1189,6 +1224,12 @@ function renderModePick(host) {
 function render() {
   if (!G) return;
   if (G.phase !== "result") resultSe = false;
+  /* あいことばは、ゲーム中もずっと出しておく（途中で入りなおす人に伝えられるように） */
+  if ($("roomChip")) {
+    $("roomChip").textContent = ROOM || "";
+    $("roomChip").style.display = ROOM ? "" : "none";
+    $("roomChip").title = ja() ? "あいことば（押すとコピー）" : "Room code (tap to copy)";
+  }
   if (G.phase === "lobby") {
     showScreen("wait");
     $("roomCode").textContent = ROOM || "------";
@@ -1372,6 +1413,7 @@ const RV_META = {
   unseen: ["eye", { ja: "見えてなかった！", en: "Never saw it!" }, "#7E6BC4"],
 };
 function showRevealModal(pid) {
+  userModal = true;   /* 自分で開いたものなので、状態が届いても閉じない */
   const p = G.players.find(x => x.id === pid);
   const secs = (p.doorLog || []).map(e => {
     const rows = e.opts.map((o, i) => {
@@ -1395,6 +1437,7 @@ function showRevealModal(pid) {
 }
 const whoChips = list => list.map(p => `<span class="who"><span class="p-dot" style="background:${p.color}"></span>${p.name}</span>`).join("");
 function showAllDoorsModal() {
+  userModal = true;   /* 自分で開いたものなので、状態が届いても閉じない */
   const kt = v => v == null ? "" : (v.ja !== undefined ? v.ja : v);
   const map = new Map();
   G.players.filter(p => !p.left).forEach(p => (p.doorLog || []).forEach(e => {
@@ -1522,6 +1565,7 @@ function rulesMinHeight(width) {
 }
 
 function renderRules(page) {
+  userModal = true;   /* 自分で開いたものなので、状態が届いても閉じない */
   lastKey = "rules" + page;
   const last = page === rulePages().length - 1;
   const closeRules = () => { closeModal(); render(); };
