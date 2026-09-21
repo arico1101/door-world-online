@@ -4,9 +4,13 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "node storybook/validate.mjs && storybook build"
   },
   "devDependencies": {
+    "@storybook/html-vite": "^10.6.0",
+    "storybook": "^10.6.0",
     "wrangler": "^4"
   }
 }
