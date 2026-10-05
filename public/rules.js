@@ -25,10 +25,50 @@ const FAM_TONE = {
 };
 
 /* プレイヤーに割りあてるキャラ（家庭カードとは無関係。ランダムに配る） */
-/* p5・p6 は、6人プレイに合わせて足した仮の絵。
-   本描きに差しかえるときは public/chars/ の10枚（p5/p6 × face,joy,fun,sad,angry）を
-   置きかえるだけでよい。コードは触らなくてよい。 */
+/* ロビー（家庭カードを配る前）でだけ使う、席ごとの仮のキャラ。
+   p5・p6 はコードで描いた仮の絵だが、配ったあとは下の CHAR_POOL から選びなおすので、
+   ゲーム中に出ることはない */
 const CHARS = ["p1","p2","p3","p4","p5","p6"];
+
+/* ── キャラは家庭カードで決まる（2026-10-06〜） ──
+   家庭カードを全員に見せるようにしたので、見た目も生まれた場所にそろえる。
+   FAM_LOOK で家庭→見た目の系統、CHAR_POOL でその系統のキャラを選ぶ。
+   1ゲームに同じキャラは出さない。ウガンダの家庭(w3/w5/w6)は最大3人同時に出るので、
+   黒人の子は服の色ちがい(bb2/bg2)まで用意してあり、足りないときだけ使う。
+   プレイヤーの色(リングや名札の色)は、キャラの服の色にそろえる。 */
+const FAM_LOOK = {
+  w1: "white",   /* 欧米 */
+  w2: "jp",      /* 日本 */
+  w3: "black",   /* ウガンダ・両親あり */
+  w4: "jp",      /* 外交官としてウガンダに駐在（「長期休みには帰国する」ので日本から来た家庭として描く） */
+  w5: "black",   /* ウガンダの遺児・支援あり */
+  w6: "black",   /* ウガンダの遺児・支援なし */
+};
+/* 系統ごとのキャラ。内側の配列が優先順で、前の段が埋まったときだけ次の段を使う */
+const CHAR_POOL = {
+  jp:    [["p1","p2","p3","p4"]],
+  white: [["wb","wg"]],
+  black: [["bb","bg"], ["bb2","bg2"]],   /* bb2/bg2 は bb/bg の服の色ちがい */
+};
+const CHAR_COLOR = {
+  p1:"#F4879F", p2:"#6FA9DD", p3:"#A98BD9", p4:"#6FC49B", p5:"#E89A5C", p6:"#57BCC9",
+  wb:"#8CC4F2", wg:"#F7A1C4", bb:"#2FB3C3", bg:"#F47A7A", bb2:"#E5B23C", bg2:"#93C84A",
+};
+/* 家庭が配られたプレイヤーに、キャラと色を割りあてる（サーバーで1回だけ呼ぶ） */
+function assignChars(players){
+  const used = new Set();
+  for(const p of players){
+    const tiers = CHAR_POOL[FAM_LOOK[p.fam && p.fam.id]] || CHAR_POOL.jp;
+    let pick = null;
+    for(const tier of tiers){
+      const free = tier.filter(c => !used.has(c));
+      if(free.length){ pick = free[Math.floor(Math.random()*free.length)]; break; }
+    }
+    if(!pick){ const all = tiers.flat(); pick = all[Math.floor(Math.random()*all.length)]; }  /* 理論上こない */
+    used.add(pick);
+    p.char = pick; p.color = CHAR_COLOR[pick];
+  }
+}
 
 /* 家庭カード(6種) hide: shien=支援・奨学金 / chiiki=支え合い / career=しごと / global=海外 */
 const FAMILIES = [
@@ -636,7 +676,7 @@ export function hideTag(p, tag){ if(!p.hidden.includes(tag)) p.hidden.push(tag);
 export function unhideTag(p, tag){ const i = p.hidden.indexOf(tag); if(i >= 0) p.hidden.splice(i,1); }
 
 export {
-  PCOLORS, TYPE_META, FAM_TONE, CHARS, FAMILIES, TALK, EVENTS, MODES, mode,
+  PCOLORS, TYPE_META, FAM_TONE, CHARS, FAM_LOOK, CHAR_POOL, CHAR_COLOR, assignChars, FAMILIES, TALK, EVENTS, MODES, mode,
   choiceDef, shuffle, jobTitle, revealTags, hiddenOptionCount, checkDeai, applyFx,
   effectiveMoneyReq, effectiveMoneyFx, effectiveLearnReq, meetsReq, endingText,
 };

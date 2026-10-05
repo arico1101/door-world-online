@@ -30,6 +30,17 @@ export function createPlayer(index = 0, overrides = {}) {
   };
   player.fam = clone(overrides.fam || fam);
   player.hidden = [...(overrides.hidden || player.fam.hide || [])];
+  /* 本番と同じく、見た目は家庭カードで決まる。同じ系統が重ならないよう席の番号でずらす */
+  if (!overrides.char) {
+    const tiers = R.CHAR_POOL[R.FAM_LOOK[player.fam.id]] || R.CHAR_POOL.jp;
+    const all = tiers.flat();
+    player.char = all[index % all.length];
+  }
+  if (!overrides.color) player.color = R.CHAR_COLOR[player.char] || player.color;
+  /* 全員に見せる境遇（サーバーの publicCard と同じ項目） */
+  const f = player.fam;
+  player.card = { id: f.id, name: f.name, region: f.region, rural: f.rural,
+                  story: f.story, asa: f.asa, daily: f.daily, dailyNote: f.dailyNote };
   return player;
 }
 
