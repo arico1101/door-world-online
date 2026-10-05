@@ -104,6 +104,7 @@ export class Room {
       done: p.done, rankAt: p.rankAt, seen: p.seen, left: !!p.left,
     };
     if (p.fam) o.card = publicCard(p.fam);
+    if (p.char) o.char = p.char;                      /* 見た目は家庭カードで決まる（R.assignChars） */
     if (reveal) {                                       /* 結果発表で全公開 */
       o.fam = p.fam; o.perk = p.perk; o.mult = p.mult; o.aai = p.aai; o.univ = p.univ;
       o.hidden = p.hidden; o.deaiUsed = p.deaiUsed; o.initMoney = p.initMoney; o.initLearn = p.initLearn;
@@ -279,6 +280,7 @@ export class Room {
         done: false, rankAt: null, seen: false,
       });
     });
+    R.assignChars(g.players);                           /* 家庭に合った見た目と色をくばる */
     g.heavyOn = heavyOn;
     g.deck = [];
     g.talkDone = false;                                 /* 22歳の「みんなで話す」は1ゲームに1回 */
