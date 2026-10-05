@@ -52,7 +52,7 @@ const CHAR_POOL = {
 };
 const CHAR_COLOR = {
   p1:"#F4879F", p2:"#6FA9DD", p3:"#A98BD9", p4:"#6FC49B", p5:"#E89A5C", p6:"#57BCC9",
-  wb:"#8CC4F2", wg:"#F7A1C4", bb:"#2FB3C3", bg:"#F47A7A", bb2:"#E5B23C", bg2:"#93C84A",
+  wb:"#86B8F2", wg:"#F5A3B3", bb:"#3FB6BF", bg:"#F47A70", bb2:"#E5B23C", bg2:"#93C84A",
 };
 /* 家庭が配られたプレイヤーに、キャラと色を割りあてる（サーバーで1回だけ呼ぶ） */
 function assignChars(players){
