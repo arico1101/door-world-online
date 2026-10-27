@@ -235,8 +235,8 @@ function applyLang() {
   $("joinNote").textContent = ja() ? "または、進行役から聞いたコードで参加：" : "Or join with the code from your host:";
   $("joinBtn").textContent = ja() ? "ルームに参加" : "Join room";
   $("lobbyNote").innerHTML = ja()
-    ? "1台ずつ、自分の端末で開いてください。<br><b>家庭カードは、自分にしか見えません。</b>"
-    : "Open this on your own device.<br><b>Your family card is visible only to you.</b>";
+    ? "1台ずつ、自分の端末で開いてください。<br><b>上のみんなの名前を押すと、その人の家庭カードが見られます。</b>"
+    : "Open this on your own device.<br><b>Tap anyone's name at the top to see their family card.</b>";
   $("waitTitle").textContent = ja() ? "まっています" : "Waiting";
   $("codeLabel").textContent = ja() ? "あいことば" : "Room code";
   $("shareNote").textContent = ja() ? "このコードを、いっしょに遊ぶ人に伝えてください。" : "Share this code with the other players.";
@@ -761,6 +761,13 @@ function renderStrip() {
       + (p.connected ? "" : " off") + (p.left ? " left" : "");
     c.style.setProperty("--ring", p.color);
     c.innerHTML = playerCardBody(p);
+    /* 押すと、その人の家庭カード（境遇）が開く。他人の番のモーダルの上にも重ねてよい */
+    if (p.card) {
+      c.classList.add("tap");
+      c.setAttribute("role", "button");
+      c.title = ja() ? `${p.name} さんの家庭カードを見る` : `See ${p.name}'s family card`;
+      c.onclick = () => openOverPending(() => showOtherCard(p.id));
+    }
     s.appendChild(c);
   });
 }
@@ -1144,7 +1151,45 @@ function myChoiceList() {
   </div>`;
 }
 
-/* ---------- 家庭カード（自分のぶんだけ） ---------- */
+/* ---------- ほかの人の家庭カード ----------
+   境遇（物語・朝・1日の暮らし）は全員に見せる。とくいはサーバーから届かないので出せない */
+function showOtherCard(pid) {
+  const p = G.players.find(x => x.id === pid);
+  if (!p || !p.card) return;
+  if (pid === MYPID) return showCard(true, () => render());
+  userModal = true;
+  se("card");
+  lastKey = "card:" + pid;
+  const c = p.card;
+  const done = () => { closeModal(); render(); };
+  openModal(`
+    <div class="fam-top" style="--fam:${p.color}">
+      <div class="av" style="${faceBg(p)}"></div>
+      <div style="min-width:0">
+        <span class="pill">${ic("home", "s")} ${ja() ? `${p.name} さんの家庭カード` : `${p.name}'s Family Card`}</span>
+        <div class="nm">${L(c.name)}</div>
+      </div>
+    </div>
+    <div class="m-body">
+      <div class="fam-story">${L(c.story)}
+        <div class="fam-asa">${ic("sun", "s")} <b>${ja() ? `${p.name} さんの朝` : `${p.name}'s morning`}</b>：${L(c.asa)}</div>
+        <div class="fam-daily">${ic("coin", "s")} ${ja() ? "1日の暮らしにつかえるお金" : "Money for a day's living"}：<b>${L(c.daily)}</b>${
+          c.dailyNote ? `<span class="note">（${L(c.dailyNote)}）</span>` : ""}</div>
+      </div>
+      <div class="now-stats">
+        <div class="ns money"><div class="k">${ic("coin", "s")}${ja() ? "おかね" : "Money"}</div><div class="v">${fm(p.money)}</div></div>
+        <div class="ns learn"><div class="k">${ic("star", "s")}${ja() ? "まなび" : "Learn"}</div><div class="v">★${p.learn}</div></div>
+        <div class="ns happy"><div class="k">${ic("heart", "s")}${ja() ? "ハッピー" : "Happy"}</div><div class="v">♥${p.happy}</div></div>
+      </div>
+      <div class="fam-secret">${ic("lock", "s")} ${ja()
+        ? "「とくい」は、結果発表までその人にだけ見えています。"
+        : "Each player's Strength stays theirs until the results."}</div>
+      <button class="m-btn" id="mCard">${ja() ? "とじる" : "Close"}</button>
+    </div>`, false, done);
+  $("mCard").onclick = done;
+}
+
+/* ---------- 家庭カード（自分のぶん） ---------- */
 function showCard(review, onClose) {
   userModal = true;   /* 自分で開いたものなので、状態が届いても閉じない */
   if (!YOU) return;
@@ -1183,11 +1228,14 @@ function showCard(review, onClose) {
           <span class="lu">${ja() ? "見えなかった" : "couldn't see"} <b>${p.unseen}</b></span></div>
       </div>` : ""}
       <div class="fam-perk">
-        <div class="k">${ic("spark", "s")} ${ja() ? "あなたのとくい" : "Your strength"}</div>
+        <div class="k">${ic("spark", "s")} ${ja() ? "あなたのとくい" : "Your strength"}
+          <span class="only-you">${ic("lock", "s")} ${ja() ? "あなたにだけ" : "only you"}</span></div>
         <div class="v">${L(p.fam.perkText)}</div>
       </div>
       ${myChoiceList()}
-      <div class="fam-secret">${ic("lock", "s")} ${ja() ? "このカードは、あなたの端末にしか表示されません。" : "This card is shown only on your device."}</div>
+      <div class="fam-secret">${ic("people", "s")} ${ja()
+        ? "家庭カードは、みんなにも見えています（「とくい」だけは結果発表まであなたにだけ）。"
+        : "Everyone can see family cards (only your Strength stays yours until the results)."}</div>
       <button class="m-btn" id="mCard">${review ? (ja() ? "とじる" : "Close") : (ja() ? "OK、覚えた" : "Got it")}</button>
     </div>`, false, done);
   $("mCard").onclick = done;
@@ -1330,8 +1378,8 @@ function hostTools() {
 /* 結果画面の見出しは盤面の長さで変わるので、描くたびに作る */
 function resultLabels() {
   $("resSub").textContent = ja()
-    ? `${firstAge()}歳から${lastAge()}歳、${years()}年間のけっか。順位は「ハッピー」の数で決まります — そして、家庭カードの公開`
-    : `${years()} years, from age ${firstAge()} to ${lastAge()}. Ranking is decided by ♥ Happiness — and the Family Cards are revealed`;
+    ? `${firstAge()}歳から${lastAge()}歳、${years()}年間のけっか。順位は「ハッピー」の数で決まります — そして、みんなの「とくい」と見えなかったトビラの公開`
+    : `${years()} years, from age ${firstAge()} to ${lastAge()}. Ranking is decided by ♥ Happiness — and everyone's Strengths and hidden doors are revealed`;
   $("allDoorsBtn").textContent = ja() ? `${years()}年間のトビラ一覧を見る` : `See all doors of the ${years()} years`;
 }
 
@@ -1510,6 +1558,7 @@ const rulePages = () => [
   ]},
   {type:"fam", tag:{ja:"家庭カード",en:"Family Cards"}, title:{ja:"スタート地点は、国によってちがう",en:"Your start depends on where you're born"}, items:[
     ["home",{ja:"はじめに引く<b>家庭カード</b>で、生まれる国・持ちもの・基本給が変わる。",en:"The <b>Family Card</b> you draw sets your country, belongings, and base pay."}],
+    ["people",{ja:"家庭カードは<b>みんなに見えている</b>。上の名前を押すと、その人のカードが開く。<b>「とくい」だけは結果発表まで本人だけ</b>。",en:"Family cards are <b>visible to everyone</b> — tap a name at the top to open theirs. <b>Only each player's Strength stays private</b> until the results."}],
     ["eye",{ja:"とちゅうで「？？？」の選択肢に出会うかも。それが何なのかは——遊びおわってからのお楽しみ。",en:"You may meet ？？？ options along the way. What they are — you'll find out after the game."}],
     ["people",{ja:"全員ゴールしたら結果発表。<b>「ネタバラシ」</b>で、？？？の中身をたしかめよう。",en:"When everyone finishes: results. Open the <b>Reveal</b> to see what the ？？？ really were."}],
   ]},

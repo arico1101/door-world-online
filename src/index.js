@@ -21,6 +21,13 @@ const fmEn = n => `${n < 0 ? "-" : ""}¥${(Math.abs(n) * 10).toLocaleString("en-
 const bi = (ja, en) => ({ ja, en });
 const join = (a, b) => a ? bi(a.ja + "<br>" + b.ja, a.en + "<br>" + b.en) : b;
 
+/* 家庭カードのうち、全員に見せてよい部分。ここに perk / perkText / hide を
+   足すと種明かしがこわれるので、足さないこと（test/ops.mjs で確かめている） */
+function publicCard(f) {
+  return { id: f.id, name: f.name, region: f.region, rural: f.rural,
+           story: f.story, asa: f.asa, daily: f.daily, dailyNote: f.dailyNote };
+}
+
 export class Room {
   constructor(state, env) {
     this.state = state;
@@ -83,13 +90,20 @@ export class Room {
     if (!this.g.players.some(p => p.id === this.g.hostId)) this.g.hostId = this.g.players[0].id;
   }
 
-  /* ---------- 送信（家庭カードは本人にだけ） ---------- */
+  /* ---------- 送信 ----------
+     家庭カードの「境遇」（どこに生まれ、どんな朝をむかえ、1日いくらで暮らすか）は、
+     配られた時点で全員に見せる（2026-10-05 に方針変更）。比較こそが学びの本体で、
+     隠していると「どこまで話していいか分からない」と話し合いが萎縮していたため。
+     いっぽう「とくい」（perk）と、見えない選択肢のタグ（hide）は結果発表まで本人だけ。
+     とくいの文面には「『支援』の選択肢がはじめて見えたとき…」と、
+     種明かしの仕掛けがそのまま書いてあるので、ここだけは絶対に先に見せない。 */
   publicPlayer(p, reveal) {
     const o = {
       id: p.id, name: p.name, color: p.color, connected: p.connected,
       pos: p.pos, money: p.money, learn: p.learn, happy: p.happy,
       done: p.done, rankAt: p.rankAt, seen: p.seen, left: !!p.left,
     };
+    if (p.fam) o.card = publicCard(p.fam);
     if (reveal) {                                       /* 結果発表で全公開 */
       o.fam = p.fam; o.perk = p.perk; o.mult = p.mult; o.aai = p.aai; o.univ = p.univ;
       o.hidden = p.hidden; o.deaiUsed = p.deaiUsed; o.initMoney = p.initMoney; o.initLearn = p.initLearn;

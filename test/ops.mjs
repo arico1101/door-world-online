@@ -188,11 +188,44 @@ async function choicePrivacy() {
   [a, b].forEach(x => x.close());
 }
 
+async function cardVisibility() {
+  console.log("[5] 家庭カード：境遇はみんなに、とくいは本人だけ");
+  const rm = room();
+  const a = await join(rm, "a", "A"), b = await join(rm, "b", "B");
+  await waitFor(a, g => g.players.length === 2, "2人そろう");
+  a.send({ t: "start", heavyOn: false });
+  await waitFor(a, g => g.phase === "cards", "カード確認へ");
+  await waitFor(a, g => g.players.every(p => p.card), "全員の境遇が届く");
+  const bOnA = a.g.players.find(p => p.id === "b").card;
+  for (const k of ["name", "story", "asa", "daily"])
+    if (!bOnA[k]) throw new Error(`ほかの人のカードに ${k} が無い`);
+  passed++; console.log("  ok　カード確認の時点で、ほかの人の境遇（名前・物語・朝・1日の暮らし）が見える");
+  /* とくいと見えない選択肢のタグは、種明かしの仕掛けそのもの。結果発表まで本人だけ */
+  const leak = (obj, path = "") => {
+    if (!obj || typeof obj !== "object") return null;
+    for (const [k, v] of Object.entries(obj)) {
+      if (["perk", "perkText", "hide", "hidden"].includes(k)) return path + k;
+      const r = leak(v, path + k + ".");
+      if (r) return r;
+    }
+    return null;
+  };
+  for (const p of a.g.players.filter(p => p.id !== "a")) {
+    const found = leak(p);
+    if (found) throw new Error(`ほかの人のとくい／タグが届いている: ${found}`);
+  }
+  passed++; console.log("  ok　ほかの人の「とくい」と見えない選択肢のタグは届かない");
+  if (!a.you || !a.you.fam || !a.you.fam.perkText) throw new Error("自分のとくいは見えてほしい");
+  passed++; console.log("  ok　自分のとくいは自分に届く");
+  [a, b].forEach(x => x.close());
+}
+
 try {
   await lobbyOps();
   await gameOps();
   await midReset();
   await choicePrivacy();
+  await cardVisibility();
   console.log(`\nOK — ${passed} checks passed`);
   process.exit(0);
 } catch (e) {
