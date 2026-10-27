@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOBIRA World Online — Rule Sheet (A4)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#78BE21; --crimson:#FF6858; --orange:#FFC04B; --teal:#00A3BD;
+  --brown:#4A3A30; --cream:#FBF8F1; --paper:#FFFFFF; --momo:#F291B5;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+@page{size:A4; margin:0;}
+html,body{background:#888;}
+body{font-family:"Zen Maru Gothic",'Hiragino Maru Gothic ProN',sans-serif; color:var(--brown);}
+.sheet{
+  width:210mm; height:297mm; margin:0 auto; background:var(--cream);
+  padding:7.5mm 10mm; overflow:hidden;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+/* Everything lives in .fit. Without the webfont the text renders larger and would
+   spill to a 2nd page, so the script at the end shrinks it only when it overflows. */
+.fit{display:flex; flex-direction:column; gap:2mm; height:100%; transform-origin:top center;}
+@media print{ html,body{background:var(--cream);} .sheet{margin:0; box-shadow:none; height:296mm;} }
+@media screen{ .sheet{box-shadow:0 4px 30px rgba(0,0,0,.4); margin:20px auto;} }
+
+/* header */
+.head{display:flex; align-items:center; gap:5mm; border-bottom:1mm solid var(--brown); padding-bottom:2mm;}
+.door-mark{
+  width:12mm; height:15mm; background:var(--brown); border-radius:6mm 6mm 1mm 1mm;
+  display:grid; place-items:center; flex:none;
+}
+.door-mark span{width:9mm; height:12mm; background:var(--orange); border-radius:4.5mm 4.5mm .8mm .8mm; position:relative;}
+.door-mark span::after{content:""; position:absolute; right:1.2mm; top:5.5mm; width:1.4mm; height:1.4mm; border-radius:50%; background:var(--teal);}
+.head h1{font-size:22pt; font-weight:900; letter-spacing:.12em; line-height:1; display:flex; align-items:center; gap:3mm;}
+.edition{
+  background:var(--orange); border:.5mm solid var(--brown); border-radius:99mm;
+  font-size:9pt; font-weight:900; letter-spacing:.05em; padding:.8mm 3.5mm; white-space:nowrap;
+}
+.head .sub{font-size:9pt; font-weight:700; margin-top:1.5mm;}
+.head .meta{margin-left:auto; display:flex; gap:1.5mm; align-items:center;}
+.chip{background:var(--paper); border:.5mm solid var(--brown); border-radius:99mm; padding:.8mm 3.5mm; font-size:8pt; font-weight:900; white-space:nowrap;}
+
+/* goal band */
+.goal-band{
+  background:var(--brown); color:var(--cream); border-radius:3mm; padding:2.5mm 5mm;
+  font-size:10pt; font-weight:700; line-height:1.55;
+}
+.goal-band b{color:var(--orange);}
+
+/* why band */
+.why-band{
+  background:var(--paper); border:.5mm dashed var(--brown); border-radius:3mm;
+  padding:1.6mm 4mm; font-size:8.2pt; font-weight:500; line-height:1.55;
+}
+.why-band b{font-weight:900;}
+
+/* section bars */
+.sec-bar{
+  border-radius:2.5mm; padding:1.6mm 4mm; font-size:11pt; font-weight:900;
+  color:#fff; display:flex; align-items:baseline; gap:2.5mm; letter-spacing:.05em;
+}
+.sec-bar small{font-size:7.8pt; font-weight:700; opacity:.95; margin-left:auto; letter-spacing:0;}
+.bar-green{background:var(--green);}
+.bar-teal{background:var(--teal);}
+.bar-orange{background:var(--orange); color:var(--brown);}
+
+/* steps */
+.steps{display:flex; gap:1.5mm; align-items:stretch;}
+.step{
+  flex:1; background:var(--paper); border:.6mm solid var(--brown); border-radius:3mm;
+  padding:2.4mm 2.8mm; display:flex; flex-direction:column; gap:1.2mm;
+}
+.step .top{display:flex; align-items:center; gap:1.8mm;}
+.step .n{
+  flex:none; width:6mm; height:6mm; border-radius:50%; background:var(--green); color:#fff;
+  display:grid; place-items:center; font-family:DotGothic16,monospace; font-size:9.5pt;
+}
+.step h3{font-size:9pt; font-weight:900; line-height:1.2; white-space:nowrap;}
+.step p{font-size:7.8pt; line-height:1.5; font-weight:500;}
+.step b{font-weight:900;}
+.step-arrow{align-self:center; font-size:10pt; font-weight:900; color:var(--brown); flex:none;}
+
+/* tools */
+.tools{display:flex; gap:3mm; flex:1;}
+.tools .col{flex:1; display:flex; flex-direction:column; gap:3mm;}
+.box{background:var(--paper); border:.6mm solid var(--brown); border-radius:3mm; padding:2.8mm 3.2mm;}
+.box.grow{flex:1; display:flex; flex-direction:column; justify-content:space-between;}
+.box.grow .sq-row{margin-bottom:0;}
+.box h2{
+  font-size:10pt; font-weight:900; margin-bottom:1.6mm; display:flex; align-items:center; gap:1.5mm;
+  border-bottom:.4mm dashed rgba(74,58,48,.35); padding-bottom:1.2mm;
+}
+.box p, .box li{font-size:8.4pt; line-height:1.55; font-weight:500;}
+.box b{font-weight:900;}
+.box ul{padding-left:4.5mm;}
+.box li{margin-bottom:.3mm;}
+.note{font-size:7.8pt; opacity:.75; margin-top:1mm;}
+
+/* squares rows */
+.sq-row{display:flex; align-items:flex-start; gap:2mm; margin-bottom:1.6mm;}
+.sq-row:last-child{margin-bottom:0;}
+.sq-tag{
+  flex:none; width:20mm; text-align:center; border-radius:2mm; border:.5mm solid var(--brown);
+  font-size:8.4pt; font-weight:900; padding:.9mm 0;
+}
+.sq-row p{flex:1; font-size:8.4pt; line-height:1.5;}
+.t-income{background:#EDF7DC;} .t-cost{background:#FFE9E7;} .t-event{background:#FFF3DC;}
+.t-learn{background:#E0F4F8;} .t-door{background:var(--brown); color:var(--cream); border-color:var(--orange);}
+
+/* door age chips */
+.door-ages{display:flex; flex-wrap:wrap; gap:1.2mm; margin-top:1.2mm;}
+.door-ages span{
+  border:.4mm solid var(--brown); background:var(--cream); border-radius:99mm;
+  padding:.5mm 2.6mm; font-size:7.8pt; font-weight:900; white-space:nowrap;
+}
+.door-ages span i{font-style:normal; font-family:DotGothic16,monospace; margin-right:.6mm;}
+
+.kv{display:flex; gap:1.5mm; flex-wrap:wrap; margin-top:1.4mm;}
+.kv span{border:.4mm solid var(--brown); background:var(--cream); border-radius:99mm; padding:.5mm 2.8mm; font-size:7.8pt; font-weight:900;}
+.kv .minus{color:#d24a3c; border-color:#d24a3c; background:var(--paper);}
+.kv .plus{color:#5a9114; border-color:#5a9114; background:var(--paper);}
+
+/* scholarship mini rows */
+.loan-row{display:flex; align-items:flex-start; gap:2mm; margin-bottom:1.4mm;}
+.loan-row:last-child{margin-bottom:0;}
+.loan-tag{
+  flex:none; width:16mm; text-align:center; border-radius:2mm; border:.5mm solid var(--brown);
+  font-size:7.8pt; font-weight:900; padding:.8mm 0;
+}
+.l-kashiyo{background:#FFE9E7;} .l-kyufu{background:#EDF7DC;}
+.loan-row p{flex:1; font-size:8.4pt; line-height:1.5;}
+
+/* result row */
+.result-row{display:flex; gap:3mm;}
+.result-row .box{flex:1;}
+.result-row .box.wide{flex:2;}
+
+/* facilitator memo */
+.faci-band{
+  background:var(--paper); border:.5mm dashed var(--brown); border-radius:3mm;
+  padding:1.6mm 4mm; font-size:8.2pt; font-weight:500; line-height:1.55;
+}
+.faci-band b{font-weight:900;}
+
+/* footer */
+.foot{
+  background:var(--brown); color:var(--cream); border-radius:3mm; padding:2.5mm 5mm;
+  font-size:8.4pt; font-weight:700; line-height:1.6;
+}
+.foot b{color:var(--orange);}
+</style>
+<style>
+/* added for the online version */
+.join-band{display:flex; gap:1.5mm; align-items:stretch;}
+.join-band .j{flex:1; background:var(--paper); border:.5mm solid var(--brown); border-radius:2.5mm; padding:1.6mm 2.4mm; font-size:7.8pt; line-height:1.45; font-weight:500;}
+.join-band .j b{font-weight:900;}
+.join-band .j .jn{display:inline-grid; place-items:center; width:4.6mm; height:4.6mm; border-radius:50%; background:var(--teal); color:#fff; font-family:DotGothic16,monospace; font-size:8pt; margin-right:1mm;}
+.mode-label{font-size:7.6pt; font-weight:900; margin-top:1.4mm;}
+.door-ages.short span{background:#E0F4F8;}
+.door-ages span.talk{background:var(--orange);}
+</style>
+</head>
+<body>
+<div class="sheet" data-document-role="page" data-label="TOBIRA World Online — How to Play">
+<div class="fit">
+
+  <div class="head">
+    <div class="door-mark"><span></span></div>
+    <div>
+      <h1>TOBIRA <span class="edition">🌍 World</span></h1>
+      <div class="sub">A life board game of money and choices</div>
+    </div>
+    <div class="meta">
+      <span class="chip">📱 one device each</span>
+      <span class="chip">👥 2–6 players</span>
+      <span class="chip">⏱ 60 / 25 min</span>
+    </div>
+  </div>
+
+  <div class="goal-band">
+    🏆 The ranking isn't decided by money, but by <b>♥ Happiness</b>.<br>
+    ♥ = <b>how often you chose with your own will</b>. Money and ★ Learning are the "keys" that make it possible.
+  </div>
+
+  <div class="why-band">
+    ❓ <b>Why start at age 6?</b> — Because the base of a life is built in <b>childhood</b>. You <b>don't choose where you're born</b>. Same dice, same board for everyone — yet <b>what each player can see</b> is different. You'll find out why after the game.
+  </div>
+
+  <!-- ═══ joining ═══ -->
+  <div class="sec-bar bar-teal">📲 How to join<small>everyone opens the same URL on their own device</small></div>
+  <div class="join-band">
+    <div class="j"><span class="jn">1</span>The <b>host</b> presses "Create a room" and gets a <b>room code</b></div>
+    <div class="j"><span class="jn">2</span>Everyone else enters <b>the code and a name</b>, then "Join room"</div>
+    <div class="j"><span class="jn">3</span>The host picks a <b>board</b>: <b>Full</b> (age 6–35, 2–6 players, ~60 min) or <b>Short</b> (age 6–25, 1–4 players, 25 min)</div>
+    <div class="j"><span class="jn">4</span>Press <b>Start</b> once everyone is in. <b>No joining after the start.</b> Disconnected? Reopen the same page to get back in</div>
+  </div>
+
+  <!-- ═══ how to play ═══ -->
+  <div class="sec-bar bar-green">🎲 How the game flows<small>from start to goal, in 4 steps</small></div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="top"><span class="n">1</span><h3>🏠 Family Card</h3></div>
+      <p>Sets your country and family. Cards are <b>visible to everyone</b> (tap a name at the top). <b>Only your Strength stays private</b></p>
+    </div>
+    <div class="step-arrow">▶</div>
+    <div class="step">
+      <div class="top"><span class="n">2</span><h3>🧒 Childhood</h3></div>
+      <p><b>Age 6–15</b>: no dice — <b>one square at a time</b>, building your base</p>
+    </div>
+    <div class="step-arrow">▶</div>
+    <div class="step">
+      <div class="top"><span class="n">3</span><h3>🎲 Roll the dice</h3></div>
+      <p>From the <b>School Door at 15</b>. On <b>your turn</b>, tap the dice on your screen. Otherwise you watch</p>
+    </div>
+    <div class="step-arrow">▶</div>
+    <div class="step">
+      <div class="top"><span class="n">4</span><h3>🏁 Goal</h3></div>
+      <p>Age <b>35</b> (Short: <b>25</b>). Everyone in: <b>results!</b> Ranking by <b>♥</b> (ties: money left)</p>
+    </div>
+  </div>
+
+  <!-- ═══ tools ═══ -->
+  <div class="sec-bar bar-teal">🧰 The game's tools<small>the squares and systems on screen</small></div>
+
+  <div class="tools">
+    <div class="col">
+      <div class="box grow">
+        <h2>🗺 The squares</h2>
+        <div class="sq-row"><span class="sq-tag t-income">💰 Work</span><p>You get paid: <b>base pay + ★ × rate</b> + allowance. <b>Base pay and rate depend on where you were born…!</b></p></div>
+        <div class="sq-row"><span class="sq-tag t-cost">💸 Expense</span><p>Living costs money. Pay the amount shown</p></div>
+        <div class="sq-row"><span class="sq-tag t-event">⚡ Event</span><p>Luck and accidents — sometimes <b>important information</b></p></div>
+        <div class="sq-row"><span class="sq-tag t-learn">📚 Learning</span><p><b>Collect ★ Learning</b> — by paying, or for free</p></div>
+        <div class="sq-row"><span class="sq-tag t-door">🚪 Door</span><p><b>Glowing square = a fork in life</b>. Options appear <b>only on the screen of the player whose turn it is</b></p></div>
+        <div class="mode-label">Full board (9 doors)</div>
+        <div class="door-ages">
+          <span><i>15</i>School</span><span><i>18</i>Home</span><span><i>19</i>Town</span>
+          <span><i>21</i>Skills</span><span><i>24</i>Career</span><span><i>26</i>Abroad</span>
+          <span><i>28</i>Relearn</span><span><i>29</i>Challenge</span><span><i>32</i>Big dream</span>
+        </div>
+        <div class="mode-label">Short board (6 doors — everyone stops at each)</div>
+        <div class="door-ages short">
+          <span><i>15</i>School</span><span><i>18</i>Home</span><span><i>19</i>University</span>
+          <span><i>21</i>Town</span><span class="talk"><i>22</i>Talk together</span><span><i>22</i>Skills</span><span><i>24</i>Career</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="box grow">
+        <h2>🔑 Doors &amp; keys</h2>
+        <ul>
+          <li>Choosing at a glowing Door earns <b>♥ Happiness</b></li>
+          <li>Good options need <b>keys</b> (money / ★ Learning). Not&nbsp;enough&nbsp;→&nbsp;🔒</li>
+          <li>Depending on your family, some options show only as <b>"？？？" — invisible</b></li>
+          <li>A no-key (¥0) path <b>can always be chosen, even in debt</b></li>
+          <li><b>★ and ♥ stay hidden until you choose</b> — you see the price, not the value</li>
+          <li>Before you choose, <b>say out loud why</b></li>
+        </ul>
+        <div class="kv"><span>Key: ¥1,500k</span><span class="minus">💸 Money −¥300k</span><span class="plus">💰 Money +¥800k</span></div>
+      </div>
+
+      <div class="box">
+        <h2>🎓 Scholarships</h2>
+        <div class="loan-row"><span class="loan-tag l-kashiyo">Loan</span><p>Borrow ¥480k total. <b>−¥60k</b> each payday. Full: <b>settled at the goal, age 35</b>. Short: <b>not paid off by 25</b> — you carry the rest into the results</p></div>
+        <div class="loan-row"><span class="loan-tag l-kyufu">Grant</span><p>Only found by <b>those who know support exists</b>. <b>Never repaid</b></p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ results ═══ -->
+  <div class="sec-bar bar-orange">🎉 Results &amp; reflection<small>this is where it really begins!</small></div>
+
+  <div class="result-row">
+    <div class="box">
+      <h2>📢 The Reveal</h2>
+      <ul>
+        <li>Secret <b>Strengths</b> and <b>what the ？？？ were</b> go public</li>
+        <li>An ending: <b>"You at 35"</b> (Short: 25)</li>
+        <li><b>Every door</b>, listed — <b>even the ones no one took</b></li>
+      </ul>
+      <p class="note">👩‍🏫 <b>Facilitators</b>: before Start, set ⚠️ heavy events ON/OFF (default OFF). Keep ？？？ secret until the goal. Switch 日本語 / English on the first screen.</p>
+    </div>
+    <div class="box wide">
+      <h2>🗣 Talk about it</h2>
+      <ul>
+        <li>Same square, same ★, different pay — was that <b>effort</b>?</li>
+        <li>What was <b>the other key</b> that made learning bear fruit?</li>
+        <li>Which doors <b>couldn't you see</b>? What <b>strengths</b> did you have?</li>
+        <li>What <b>"keys"</b> could we hand to children around the world?</li>
+      </ul>
+      <p class="note">Where you're born shapes your chances. That's why support systems exist — and <b>knowing about them is the first step</b>. This game is a door into that.</p>
+    </div>
+  </div>
+
+  <div class="foot">
+    💡 The most important thing in this game — lacking the key to a door, and <b>not even knowing the door exists</b>, are completely different.
+    🔗 tobira-online.tobira-online.workers.dev
+  </div>
+
+</div>
+</div>
+<script>
+/* Insurance for the single A4 page. Without the webfont the text renders larger and
+   would spill onto a 2nd page, so shrink slightly — only when it actually overflows. */
+(function(){
+  var fit = document.querySelector(".fit");
+  function apply(){
+    fit.style.transform = "none";
+    fit.style.height = "auto";
+    var need = fit.getBoundingClientRect().height;   /* natural content height */
+    fit.style.height = "";
+    var avail = fit.clientHeight;                    /* height of one page */
+    if(need > avail + 1){
+      var k = Math.max(.8, avail / need);
+      fit.style.transform = "scale(" + k + ")";
+      fit.style.height = (100 / k) + "%";             /* still fill the page once scaled */
+    }
+  }
+  window.addEventListener("load", apply);
+  window.addEventListener("beforeprint", apply);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(apply);
+})();
+</script>
+</body>
+</html>
