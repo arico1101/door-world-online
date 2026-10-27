@@ -190,6 +190,14 @@ async function playTest() {
     const ages = g.players.map(p => R.mode("full").AGES[p.pos]);
     if (ages.some(a => a !== 35)) throw new Error("35歳でゴールしていない人がいる: " + ages.join(","));
     ok(`${n}人：全員が35歳までたどり着いた（♥ ${g.players.map(p => p.happy).join("/")}）`);
+    /* 見た目は家庭カードで決まる：系統が合っていて、同じキャラは2人に出ない */
+    for (const p of g.players) {
+      const pool = R.CHAR_POOL[R.FAM_LOOK[p.fam.id]].flat();
+      if (!pool.includes(p.char)) throw new Error(`${p.name}(${p.fam.id}) のキャラ ${p.char} が系統に合わない`);
+      if (p.color !== R.CHAR_COLOR[p.char]) throw new Error(`${p.name} の色がキャラの服とそろっていない`);
+    }
+    if (new Set(g.players.map(p => p.char)).size !== n) throw new Error("同じキャラが2人に出ている");
+    ok(`${n}人：キャラは家庭に合った見た目で、重ならない（${g.players.map(p => p.fam.id + "→" + p.char).join(" ")}）`);
     cs.forEach(c => c.close());
   }
   /* 上限をこえて入れないこと */

@@ -13,8 +13,9 @@ const $ = id => document.getElementById(id);
 
 /* 描いたアイコン（index.html の <symbol> を参照する。絵文字は使わない） */
 const ic = (name, cls) => `<svg class="ic${cls ? " " + cls : ""}" aria-hidden="true"><use href="#ic-${name}"/></svg>`;
-/* プレイヤーの色から、わりあてられたキャラを引く */
-const charOf = p => R.CHARS[Math.max(0, R.PCOLORS.indexOf(p.color))] || R.CHARS[0];
+/* 見た目は家庭カードで決まる（サーバーの R.assignChars が p.char を送ってくる）。
+   配る前のロビーだけは、席の色から仮のキャラを引く */
+const charOf = p => p.char || R.CHARS[Math.max(0, R.PCOLORS.indexOf(p.color))] || R.CHARS[0];
 const faceBg = p => `background-image:url(./chars/${charOf(p)}-face.png)`;
 
 /* ---------- 通信 ---------- */
