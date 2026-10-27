@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>トビラ せかい版 オンライン — ルールシート（A4）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#78BE21; --crimson:#FF6858; --orange:#FFC04B; --teal:#00A3BD;
+  --brown:#4A3A30; --cream:#FBF8F1; --paper:#FFFFFF; --momo:#F291B5;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+@page{size:A4; margin:0;}
+html,body{background:#888;}
+body{font-family:"Zen Maru Gothic",'Hiragino Maru Gothic ProN',sans-serif; color:var(--brown);}
+.sheet{
+  width:210mm; height:297mm; margin:0 auto; background:var(--cream);
+  padding:7.5mm 10mm; overflow:hidden;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+/* 中身は .fit にまとめる。Webフォントが読めない環境では文字が大きくなり
+   1枚に収まらなくなるため、はみ出すときだけページ末尾のスクリプトで自動縮小する */
+.fit{display:flex; flex-direction:column; gap:2mm; height:100%; transform-origin:top center;}
+@media print{ html,body{background:var(--cream);} .sheet{margin:0; box-shadow:none; height:296mm;} }
+@media screen{ .sheet{box-shadow:0 4px 30px rgba(0,0,0,.4); margin:20px auto;} }
+
+/* header */
+.head{display:flex; align-items:center; gap:5mm; border-bottom:1mm solid var(--brown); padding-bottom:2mm;}
+.door-mark{
+  width:12mm; height:15mm; background:var(--brown); border-radius:6mm 6mm 1mm 1mm;
+  display:grid; place-items:center; flex:none;
+}
+.door-mark span{width:9mm; height:12mm; background:var(--orange); border-radius:4.5mm 4.5mm .8mm .8mm; position:relative;}
+.door-mark span::after{content:""; position:absolute; right:1.2mm; top:5.5mm; width:1.4mm; height:1.4mm; border-radius:50%; background:var(--teal);}
+.head h1{font-size:22pt; font-weight:900; letter-spacing:.12em; line-height:1; display:flex; align-items:center; gap:3mm;}
+.edition{
+  background:var(--orange); border:.5mm solid var(--brown); border-radius:99mm;
+  font-size:9pt; font-weight:900; letter-spacing:.05em; padding:.8mm 3.5mm; white-space:nowrap;
+}
+.head .sub{font-size:9pt; font-weight:700; margin-top:1.5mm;}
+.head .meta{margin-left:auto; display:flex; gap:1.5mm; align-items:center;}
+.chip{background:var(--paper); border:.5mm solid var(--brown); border-radius:99mm; padding:.8mm 3.5mm; font-size:8pt; font-weight:900; white-space:nowrap;}
+
+/* goal band */
+.goal-band{
+  background:var(--brown); color:var(--cream); border-radius:3mm; padding:2.5mm 5mm;
+  font-size:10pt; font-weight:700; line-height:1.55;
+}
+.goal-band b{color:var(--orange);}
+
+/* why band */
+.why-band{
+  background:var(--paper); border:.5mm dashed var(--brown); border-radius:3mm;
+  padding:1.6mm 4mm; font-size:8.2pt; font-weight:500; line-height:1.55;
+}
+.why-band b{font-weight:900;}
+
+/* section bars */
+.sec-bar{
+  border-radius:2.5mm; padding:1.6mm 4mm; font-size:11pt; font-weight:900;
+  color:#fff; display:flex; align-items:baseline; gap:2.5mm; letter-spacing:.05em;
+}
+.sec-bar small{font-size:7.8pt; font-weight:700; opacity:.95; margin-left:auto; letter-spacing:0;}
+.bar-green{background:var(--green);}
+.bar-teal{background:var(--teal);}
+.bar-orange{background:var(--orange); color:var(--brown);}
+
+/* steps（すすめかた） */
+.steps{display:flex; gap:1.5mm; align-items:stretch;}
+.step{
+  flex:1; background:var(--paper); border:.6mm solid var(--brown); border-radius:3mm;
+  padding:2.4mm 2.8mm; display:flex; flex-direction:column; gap:1.2mm;
+}
+.step .top{display:flex; align-items:center; gap:1.8mm;}
+.step .n{
+  flex:none; width:6mm; height:6mm; border-radius:50%; background:var(--green); color:#fff;
+  display:grid; place-items:center; font-family:DotGothic16,monospace; font-size:9.5pt;
+}
+.step h3{font-size:9pt; font-weight:900; line-height:1.2; white-space:nowrap;}
+.step p{font-size:7.8pt; line-height:1.5; font-weight:500;}
+.step b{font-weight:900;}
+.step-arrow{align-self:center; font-size:10pt; font-weight:900; color:var(--brown); flex:none;}
+
+/* tools（ゲームのツール） */
+.tools{display:flex; gap:3mm; flex:1;}
+.tools .col{flex:1; display:flex; flex-direction:column; gap:3mm;}
+.box{background:var(--paper); border:.6mm solid var(--brown); border-radius:3mm; padding:2.8mm 3.2mm;}
+.box.grow{flex:1; display:flex; flex-direction:column; justify-content:space-between;}
+.box.grow .sq-row{margin-bottom:0;}
+.box h2{
+  font-size:10pt; font-weight:900; margin-bottom:1.6mm; display:flex; align-items:center; gap:1.5mm;
+  border-bottom:.4mm dashed rgba(74,58,48,.35); padding-bottom:1.2mm;
+}
+.box p, .box li{font-size:8.4pt; line-height:1.55; font-weight:500;}
+.box b{font-weight:900;}
+.box ul{padding-left:4.5mm;}
+.box li{margin-bottom:.3mm;}
+.note{font-size:7.8pt; opacity:.75; margin-top:1mm;}
+
+/* squares rows */
+.sq-row{display:flex; align-items:flex-start; gap:2mm; margin-bottom:1.6mm;}
+.sq-row:last-child{margin-bottom:0;}
+.sq-tag{
+  flex:none; width:20mm; text-align:center; border-radius:2mm; border:.5mm solid var(--brown);
+  font-size:8.4pt; font-weight:900; padding:.9mm 0;
+}
+.sq-row p{flex:1; font-size:8.4pt; line-height:1.5;}
+.t-income{background:#EDF7DC;} .t-cost{background:#FFE9E7;} .t-event{background:#FFF3DC;}
+.t-learn{background:#E0F4F8;} .t-door{background:var(--brown); color:var(--cream); border-color:var(--orange);}
+
+/* door age chips */
+.door-ages{display:flex; flex-wrap:wrap; gap:1.2mm; margin-top:1.2mm;}
+.door-ages span{
+  border:.4mm solid var(--brown); background:var(--cream); border-radius:99mm;
+  padding:.5mm 2.6mm; font-size:7.8pt; font-weight:900; white-space:nowrap;
+}
+.door-ages span i{font-style:normal; font-family:DotGothic16,monospace; margin-right:.6mm;}
+
+.kv{display:flex; gap:1.5mm; flex-wrap:wrap; margin-top:1.4mm;}
+.kv span{border:.4mm solid var(--brown); background:var(--cream); border-radius:99mm; padding:.5mm 2.8mm; font-size:7.8pt; font-weight:900;}
+.kv .minus{color:#d24a3c; border-color:#d24a3c; background:var(--paper);}
+.kv .plus{color:#5a9114; border-color:#5a9114; background:var(--paper);}
+
+/* 奨学金 mini rows */
+.loan-row{display:flex; align-items:flex-start; gap:2mm; margin-bottom:1.4mm;}
+.loan-row:last-child{margin-bottom:0;}
+.loan-tag{
+  flex:none; width:16mm; text-align:center; border-radius:2mm; border:.5mm solid var(--brown);
+  font-size:7.8pt; font-weight:900; padding:.8mm 0;
+}
+.l-kashiyo{background:#FFE9E7;} .l-kyufu{background:#EDF7DC;}
+.loan-row p{flex:1; font-size:8.4pt; line-height:1.5;}
+
+/* result row（けっか発表・ふりかえり） */
+.result-row{display:flex; gap:3mm;}
+.result-row .box{flex:1;}
+.result-row .box.wide{flex:2;}
+
+/* facilitator memo */
+.faci-band{
+  background:var(--paper); border:.5mm dashed var(--brown); border-radius:3mm;
+  padding:1.6mm 4mm; font-size:8.2pt; font-weight:500; line-height:1.55;
+}
+.faci-band b{font-weight:900;}
+
+/* footer */
+.foot{
+  background:var(--brown); color:var(--cream); border-radius:3mm; padding:2.5mm 5mm;
+  font-size:8.4pt; font-weight:700; line-height:1.6;
+}
+.foot b{color:var(--orange);}
+</style>
+<style>
+/* オンライン版で足したもの */
+.join-band{display:flex; gap:1.5mm; align-items:stretch;}
+.join-band .j{flex:1; background:var(--paper); border:.5mm solid var(--brown); border-radius:2.5mm; padding:1.6mm 2.4mm; font-size:7.8pt; line-height:1.45; font-weight:500;}
+.join-band .j b{font-weight:900;}
+.join-band .j .jn{display:inline-grid; place-items:center; width:4.6mm; height:4.6mm; border-radius:50%; background:var(--teal); color:#fff; font-family:DotGothic16,monospace; font-size:8pt; margin-right:1mm;}
+.mode-label{font-size:7.6pt; font-weight:900; margin-top:1.4mm;}
+.door-ages.short span{background:#E0F4F8;}
+.door-ages span.talk{background:var(--orange);}
+</style>
+</head>
+<body>
+<div class="sheet" data-document-role="page" data-label="トビラ せかい版 オンライン あそびかた">
+<div class="fit">
+
+  <div class="head">
+    <div class="door-mark"><span></span></div>
+    <div>
+      <h1>トビラ <span class="edition">🌍 せかい版</span></h1>
+      <div class="sub">世界のどこかで生きる、おかねと選択肢の人生すごろく</div>
+    </div>
+    <div class="meta">
+      <span class="chip">📱 ひとり1台</span>
+      <span class="chip">👥 2〜6人</span>
+      <span class="chip">⏱ 60分／25分</span>
+    </div>
+  </div>
+
+  <div class="goal-band">
+    🏆 順位を決めるのは、お金の多さじゃなく <b>♥ハッピーの数</b>。<br>
+    ♥の数＝<b>人生の選択肢をたくさん持ち、じぶんの意思で選べた数</b>。お金とまなびは、そのための「カギ」。
+  </div>
+
+  <div class="why-band">
+    ❓ <b>なぜ6歳から？</b>——人生の土台は<b>子ども時代</b>につくられるから。生まれる国と家庭は、<b>じぶんでは選べない</b>。サイコロも盤面もみんな同じ——でも<b>見える景色</b>は人によってちがう。理由は、遊び終わってから。
+  </div>
+
+  <!-- ═══ さんかのしかた ═══ -->
+  <div class="sec-bar bar-teal">📲 さんかのしかた<small>それぞれの端末で、同じURLをひらく</small></div>
+  <div class="join-band">
+    <div class="j"><span class="jn">1</span><b>進行役</b>が「ルームをつくる」。<b>あいことば</b>（コード）が出る</div>
+    <div class="j"><span class="jn">2</span>みんなは<b>あいことばと名前</b>を入れて「ルームに参加」</div>
+    <div class="j"><span class="jn">3</span>進行役が<b>盤面</b>をえらぶ。<b>ぜんぶ</b>（6〜35歳・2〜6人・60分ほど）か<b>みじかめ</b>（6〜25歳・1〜4人・25分）</div>
+    <div class="j"><span class="jn">4</span>そろったら<b>スタート</b>。<b>始まったあとは途中参加できない</b>。切れたら同じページを開きなおせばもどれる</div>
+  </div>
+
+  <!-- ═══ すすめかた ═══ -->
+  <div class="sec-bar bar-green">🎲 ゲームのすすめかた<small>スタートからゴールまで、この4ステップ</small></div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="top"><span class="n">1</span><h3>🏠 家庭カード</h3></div>
+      <p>生まれる国と家庭が決まる。カードは<b>みんなに見えている</b>（上の名前を押すと開く）。<b>「とくい」だけは本人だけ</b>の秘密</p>
+    </div>
+    <div class="step-arrow">▶</div>
+    <div class="step">
+      <div class="top"><span class="n">2</span><h3>🧒 子ども時代</h3></div>
+      <p><b>6〜15歳</b>はサイコロなしで<b>1マスずつ</b>。人生の土台をつくる、準備の時間</p>
+    </div>
+    <div class="step-arrow">▶</div>
+    <div class="step">
+      <div class="top"><span class="n">3</span><h3>🎲 サイコロで進む</h3></div>
+      <p><b>15歳の進学トビラ</b>から。<b>自分の番</b>に自分の画面でサイコロをタップ。ほかの人の番は見ている画面に</p>
+    </div>
+    <div class="step-arrow">▶</div>
+    <div class="step">
+      <div class="top"><span class="n">4</span><h3>🏁 ゴール</h3></div>
+      <p><b>35歳</b>（みじかめは<b>25歳</b>）。全員が着いたら<b>けっか発表</b>。順位は<b>♥の数</b>（同点なら残金）</p>
+    </div>
+  </div>
+
+  <!-- ═══ ゲームのツール ═══ -->
+  <div class="sec-bar bar-teal">🧰 ゲームのツール<small>画面に出てくるマスとしくみ</small></div>
+
+  <div class="tools">
+    <div class="col">
+      <div class="box grow">
+        <h2>🗺 マスの種類</h2>
+        <div class="sq-row"><span class="sq-tag t-income">💰 おしごと</span><p>かせぎが入る。<b>基本給＋★×掛け率</b>＋仕送り。<b>基本給も掛け率も、生まれた場所でちがう…！</b></p></div>
+        <div class="sq-row"><span class="sq-tag t-cost">💸 しゅっぴ</span><p>生きているとお金はかかる。決まった額を支払う</p></div>
+        <div class="sq-row"><span class="sq-tag t-event">⚡ できごと</span><p>ラッキーもアクシデントも。<b>だいじな情報</b>が入ることも</p></div>
+        <div class="sq-row"><span class="sq-tag t-learn">📚 まなび</span><p><b>★まなびが貯まる</b>。ゼロ円でも学べる</p></div>
+        <div class="sq-row"><span class="sq-tag t-door">🚪 トビラ</span><p><b>光るマス＝人生の分岐点</b>。選択肢は<b>自分の番の人の画面だけ</b>に出る</p></div>
+        <div class="mode-label">ぜんぶ（9つ）</div>
+        <div class="door-ages">
+          <span><i>15</i>進学</span><span><i>18</i>くらし</span><span><i>19</i>まち</span>
+          <span><i>21</i>技術</span><span><i>24</i>しごと</span><span><i>26</i>留学</span>
+          <span><i>28</i>学びなおし</span><span><i>29</i>挑戦</span><span><i>32</i>大きな夢</span>
+        </div>
+        <div class="mode-label">みじかめ（6つ・どれも必ず止まる）</div>
+        <div class="door-ages short">
+          <span><i>15</i>進学</span><span><i>18</i>くらし</span><span><i>19</i>大学</span>
+          <span><i>21</i>まち</span><span class="talk"><i>22</i>みんなで話す</span><span><i>22</i>技術</span><span><i>24</i>しごと</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="box grow">
+        <h2>🔑 トビラとカギ</h2>
+        <ul>
+          <li>光るトビラで選択肢を選ぶと<b>♥ハッピーがもらえる</b></li>
+          <li>いい選択には<b>カギ</b>（必要なお金・★まなび）がいる。足りないと🔒</li>
+          <li>家庭によっては、選択肢が<b>「？？？」で見えない</b>ことも</li>
+          <li>カギなし（0円）の道は、<b>借金中でもかならず選べる</b></li>
+          <li><b>★と♥は選ぶまでわからない</b>——値段はわかっても、価値はわからない</li>
+          <li>えらぶ前に、<b>「なぜそれを選ぶのか」をひとこと</b>話そう</li>
+        </ul>
+        <div class="kv"><span>カギ：おかね150万</span><span class="minus">💸 おかね −30万</span><span class="plus">💰 おかね +80万</span></div>
+      </div>
+
+      <div class="box">
+        <h2>🎓 奨学金</h2>
+        <div class="loan-row"><span class="loan-tag l-kashiyo">貸与型</span><p>総額48万を借りる。働くたびに<b>−6万</b>。ぜんぶは<b>35歳のゴールで清算</b>。みじかめは<b>25歳では返しおわらない</b>——残りを背負ったまま結果発表へ</p></div>
+        <div class="loan-row"><span class="loan-tag l-kyufu">給付型</span><p><b>支援を知っている人</b>だけ出会える。<b>返さなくていい</b></p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ けっか発表 ═══ -->
+  <div class="sec-bar bar-orange">🎉 けっか発表とふりかえり<small>ここからが本番！</small></div>
+
+  <div class="result-row">
+    <div class="box">
+      <h2>📢 ネタバラシ</h2>
+      <ul>
+        <li>秘密だった<b>「とくい」</b>と、<b>「？？？」の中身</b>を公開</li>
+        <li><b>「35歳のいま」</b>（みじかめは25歳）のエンディング</li>
+        <li>全員の<b>トビラ一覧</b>。<b>通らなかったトビラ</b>も</li>
+      </ul>
+      <p class="note">👩‍🏫 <b>進行役へ</b>：スタート前に⚠️重いライフイベントのON/OFF（初期OFF）。「？？？」の意味はゴールまで秘密に。最初の画面で日本語／English を切りかえ。</p>
+    </div>
+    <div class="box wide">
+      <h2>🗣 話してみよう</h2>
+      <ul>
+        <li>同じ★の数なのに、かせぎがちがった。それは<b>努力のちがい</b>だった？</li>
+        <li>まなびが実るのに必要だった、<b>もうひとつのカギ</b>は何だった？</li>
+        <li>あなたのカードから<b>見えなかったトビラ</b>は？　見えていた<b>強み</b>は？</li>
+        <li>私たちが世界の子どもたちにわたせる<b>「カギ」</b>って、何だろう？</li>
+      </ul>
+      <p class="note">生まれた場所のちがいは、機会やまなびのちがいにつながっていく。だから支援のしくみがあり、<b>知ることがその第一歩</b>——このゲームは、その入り口です。</p>
+    </div>
+  </div>
+
+  <div class="foot">
+    💡 このゲームでいちばん大事なこと——カギが足りずに開けられないのと、<b>扉があることすら知らない</b>のは、ぜんぜん違う。
+    🔗 tobira-online.tobira-online.workers.dev
+  </div>
+
+</div>
+</div>
+<script>
+/* A4・1枚に収めるための保険。Webフォントが読み込めない環境では文字が大きくなり
+   1枚に収まらなくなるので、そのときだけ全体をわずかに縮める（収まっていれば何もしない） */
+(function(){
+  var fit = document.querySelector(".fit");
+  function apply(){
+    fit.style.transform = "none";
+    fit.style.height = "auto";
+    var need = fit.getBoundingClientRect().height;   /* 中身の自然な高さ */
+    fit.style.height = "";
+    var avail = fit.clientHeight;                    /* 1枚に使える高さ */
+    if(need > avail + 1){
+      var k = Math.max(.8, avail / need);
+      fit.style.transform = "scale(" + k + ")";
+      fit.style.height = (100 / k) + "%";             /* 縮小後もページ下端まで埋める */
+    }
+  }
+  window.addEventListener("load", apply);
+  window.addEventListener("beforeprint", apply);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(apply);
+})();
+</script>
+</body>
+</html>
