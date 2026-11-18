@@ -1421,6 +1421,7 @@ function showResult() {
       </div>
       ${p.loan > 0 ? `<div class="r-loan">${ic("cap", "s")} ${ja()
         ? `奨学金が、まだ <b>${fm(p.loan)}</b> のこっている` : `<b>${fm(p.loan)}</b> of the scholarship is still unpaid`}</div>` : ""}
+      <div class="r-perk">${ic("spark", "s")} <b>${ja() ? "とくい" : "Strength"}</b>：${L(p.fam.perkText)}</div>
       <div class="r-ending"><b>${ja() ? `${lastAge()}歳のいま` : `Life at ${lastAge()}`}</b>：${L(R.endingText(p, playing.length === 1, M))}</div>
       <div class="doorbar">
         <div class="seg-open" style="width:${pct(p.open)}%"></div>
