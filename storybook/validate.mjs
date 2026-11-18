@@ -18,7 +18,7 @@ const duplicateRefs = refs.filter((ref, index) => refs.indexOf(ref) !== index);
 const missing = refs.filter(ref => !fixtureRefs.includes(ref));
 const unused = fixtureRefs.filter(ref => !refs.includes(ref));
 
-if (refs.length !== 73) throw new Error(`Expected 73 stories, found ${refs.length}`);
+if (refs.length !== 74) throw new Error(`Expected 74 stories, found ${refs.length}`);
 if (duplicateRefs.length) throw new Error(`Duplicate story scenarios: ${[...new Set(duplicateRefs)].join(", ")}`);
 if (missing.length) throw new Error(`Missing fixtures: ${missing.join(", ")}`);
 if (unused.length) throw new Error(`Unused fixtures: ${unused.join(", ")}`);
