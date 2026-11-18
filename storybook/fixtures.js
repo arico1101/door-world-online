@@ -400,6 +400,7 @@ export const scenarios = {
   reveal: {
     mixedDoorStates: withModal(createState({ game: createGame({ phase: "result", players: [createResultPlayer(0)] }) }), "reveal", { view: "result" }),
     noDoors: withModal(createState({ game: createGame({ phase: "result", players: [createResultPlayer(0, { doorLog: [], open: 0, locked: 0, unseen: 0 })] }) }), "reveal", { view: "result" }),
+    familyCard: withModal(createState({ game: createGame({ phase: "result", players: [createResultPlayer(0), createResultPlayer(2, { mult: 10 })] }) }), { type: "famReveal", pid: PLAYER_IDS[2] }, { view: "result" }),
   },
   allDoors: {
     playerChoices: withModal(createState({ game: createGame({ phase: "result", players: [createResultPlayer(0), createResultPlayer(1)] }) }), "allDoors", { view: "result" }),

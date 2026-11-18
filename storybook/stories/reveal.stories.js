@@ -4,3 +4,4 @@ export default { title: "12 Reveal/Individual player" };
 
 export const MixedDoorStates = scenarioStory("reveal", "mixedDoorStates", "Chosen, locked, and unseen doors");
 export const NoDoors = scenarioStory("reveal", "noDoors", "No doors encountered");
+export const FamilyCard = scenarioStory("reveal", "familyCard", "Another player's family card after the game");

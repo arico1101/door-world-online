@@ -1190,6 +1190,15 @@ function showOtherCard(pid) {
   $("mCard").onclick = done;
 }
 
+/* 「とくい」は「名前：どこに・どう効くか」の形で書いてある。名前を太字、効きかたを下に小さく出す */
+function perkHtml(fam) {
+  const t = L(fam.perkText);
+  const i = t.indexOf(ja() ? "：" : ": ");
+  if (i < 0) return t;
+  const how = t.slice(i + (ja() ? 1 : 2));
+  return `${t.slice(0, i)}<small>${ja() ? how : how.charAt(0).toUpperCase() + how.slice(1)}</small>`;
+}
+
 /* ---------- 家庭カード（自分のぶん） ---------- */
 function showCard(review, onClose) {
   userModal = true;   /* 自分で開いたものなので、状態が届いても閉じない */
@@ -1231,7 +1240,7 @@ function showCard(review, onClose) {
       <div class="fam-perk">
         <div class="k">${ic("spark", "s")} ${ja() ? "あなたのとくい" : "Your strength"}
           <span class="only-you">${ic("lock", "s")} ${ja() ? "あなたにだけ" : "only you"}</span></div>
-        <div class="v">${L(p.fam.perkText)}</div>
+        <div class="v">${perkHtml(p.fam)}</div>
       </div>
       ${myChoiceList()}
       <div class="fam-secret">${ic("people", "s")} ${ja()
@@ -1431,13 +1440,63 @@ function showResult() {
       <div class="doorbar-label">${ja()
         ? `出会ったトビラ ${total}枚 ── <span class="lo">開けられた ${p.open}</span>／<span class="ll">カギが足りなかった ${p.locked}</span>／<span class="lu">見えていなかった ${p.unseen}</span>`
         : `${total} doors met ── <span class="lo">opened ${p.open}</span> / <span class="ll">short of keys ${p.locked}</span> / <span class="lu">never saw ${p.unseen}</span>`}</div>
-      <button class="chip-btn rv-btn" data-p="${p.id}">${ja() ? "トビラのネタバラシを見る" : "See this player's door reveal"}</button>`;
+      <div class="r-btns">
+        <button class="chip-btn fc-btn" data-p="${p.id}">${ic("home", "s")} ${ja() ? "家庭カードを見る" : "See family card"}</button>
+        <button class="chip-btn rv-btn" data-p="${p.id}">${ic("door", "s")} ${ja() ? "トビラのネタバラシを見る" : "See this player's door reveal"}</button>
+      </div>`;
     list.appendChild(card);
   });
   list.querySelectorAll(".rv-btn").forEach(b => b.onclick = () => showRevealModal(b.dataset.p));
+  list.querySelectorAll(".fc-btn").forEach(b => b.onclick = () => showFamRevealModal(b.dataset.p));
   $("resLeftNote").innerHTML = gone.length
     ? (ja() ? `とちゅうで抜けた人：${gone.map(p => p.name).join("、")}` : `Left partway: ${gone.map(p => p.name).join(", ")}`)
     : "";
+}
+
+/* ---------- 結果発表のあとに、だれの家庭カードでも見られる ----------
+   ふりかえり（かせぎの差の問い）で「だれが、どこの家庭だったか」を確かめるため。
+   ゲーム中は画面に出なかった 基本給・★1つの値 も、ここでは出す */
+function showFamRevealModal(pid) {
+  const p = G.players.find(x => x.id === pid);
+  if (!p || !p.fam) return;
+  const f = p.fam;
+  const mult0 = f.rural ? 5 : 10;
+  const learn0 = p.initLearn != null ? p.initLearn : 1;
+  openModal(`
+    <div class="fam-top" style="--fam:${p.color}">
+      <div class="av" style="${faceBg(p)}"></div>
+      <div style="min-width:0">
+        <span class="pill">${ic("home", "s")} ${ja() ? `${p.name} さんの家庭カード` : `${p.name}'s Family Card`}</span>
+        <div class="nm">${L(f.name)}</div>
+      </div>
+    </div>
+    <div class="m-body">
+      <div class="fam-story">${L(f.story)}
+        <div class="fam-asa">${ic("sun", "s")} <b>${ja() ? "朝" : "Morning"}</b>：${L(f.asa)}</div>
+        ${f.daily ? `<div class="fam-daily">${ic("coin", "s")} ${ja() ? "1日の暮らしにつかえるお金" : "Money for a day's living"}：<b>${L(f.daily)}</b>${
+          f.dailyNote ? `<span class="note">（${L(f.dailyNote)}）</span>` : ""}</div>` : ""}
+      </div>
+      <div class="fam-start">
+        <div class="k">${ic("start", "s")} ${ja() ? "6歳のスタート" : "Start at age 6"}</div>
+        <div class="now-stats">
+          <div class="ns money"><div class="k">${ic("coin", "s")}${ja() ? "おかね" : "Money"}</div><div class="v">${fm(p.initMoney != null ? p.initMoney : f.money)}</div></div>
+          <div class="ns learn"><div class="k">${ic("star", "s")}${ja() ? "まなび" : "Learn"}</div><div class="v">★${learn0}</div></div>
+          <div class="ns happy"><div class="k">${ic("heart", "s")}${ja() ? "ハッピー" : "Happy"}</div><div class="v">♥0</div></div>
+        </div>
+      </div>
+      <div class="fam-hiddennum">
+        <div class="k">${ic("eye", "s")} ${ja() ? "ゲーム中は画面に出なかった数字" : "Numbers never shown during the game"}</div>
+        <div class="hn"><span>${ja() ? "おしごとの基本給" : "Base pay per job"}</span><b>${fm(f.wage)}</b></div>
+        <div class="hn"><span>${ja() ? "まなび★1つが生むかせぎ" : "Pay per ★ of learning"}</span><b>${fm(mult0)}${
+          p.mult != null && p.mult !== mult0 ? `<small>${ja() ? ` → とちゅうから ${fm(p.mult)}` : ` → later ${fm(p.mult)}`}</small>` : ""}</b></div>
+      </div>
+      <div class="fam-perk">
+        <div class="k">${ic("spark", "s")} ${ja() ? "とくい" : "Strength"}</div>
+        <div class="v">${perkHtml(f)}</div>
+      </div>
+      <button class="m-btn" id="fcOk">${ja() ? "とじる" : "Close"}</button>
+    </div>`, false, closeModal);
+  $("fcOk").onclick = closeModal;
 }
 
 /* ---------- ネタバラシ ---------- */
@@ -1689,6 +1748,7 @@ function previewGame({ screen, state, you, pid, room, lang: previewLang, modal, 
     case "allDoors":
     case "all-doors": showAllDoorsModal(); break;
     case "reveal": showRevealModal(command.pid || modalOptions.revealPid || MYPID); break;
+    case "famReveal": showFamRevealModal(command.pid || modalOptions.revealPid || MYPID); break;
   }
 
   const die = $("bigDie");

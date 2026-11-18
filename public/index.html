@@ -416,7 +416,20 @@ h1.game-title{font-size:clamp(32px,8vw,48px); font-weight:900; letter-spacing:.1
 .seg-open{background:var(--ok);} .seg-lock{background:var(--lock);} .seg-unseen{background:var(--unseen);}
 .doorbar-label{font-size:11.5px; font-weight:900; color:var(--sub); margin-top:7px; line-height:1.7;}
 .doorbar-label .lo{color:#4CA872;} .doorbar-label .ll{color:#C98A3C;} .doorbar-label .lu{color:#7E6BC4;}
-.rv-btn{margin-top:11px; font-size:13px;}
+.r-perk{display:flex; gap:6px; align-items:flex-start;}
+.r-perk .ic{flex:none; margin-top:4px; color:#A9629B;}
+.r-btns{display:flex; flex-wrap:wrap; gap:8px; margin-top:11px;}
+.r-btns .chip-btn{font-size:13px; display:inline-flex; align-items:center; gap:6px;}
+/* 結果発表のあとに開く、だれかの家庭カード */
+.fam-start{margin-top:11px;}
+.fam-start > .k, .fam-hiddennum > .k{font-size:10.5px; font-weight:900; color:var(--sub); letter-spacing:.06em;
+  display:flex; align-items:center; gap:5px; margin-bottom:6px;}
+.fam-hiddennum{margin-top:11px; background:#F3F0FF; border-radius:14px; padding:10px 14px;}
+.fam-hiddennum > .k{color:#7E6BC4;}
+.fam-hiddennum .hn{display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+  font-size:12.5px; font-weight:700; color:#5B4A6B; line-height:1.9;}
+.fam-hiddennum .hn b{font-size:15px; font-weight:900; text-align:right;}
+.fam-hiddennum .hn small{font-size:11px; font-weight:700; color:#7E6BC4;}
 .res-btns{text-align:center; margin-top:24px;}
 
 /* あそびかた・ネタバラシ・トビラ一覧（どれも .rule-page を使う）
